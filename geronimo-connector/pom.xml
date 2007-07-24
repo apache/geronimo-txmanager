@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<!-- $Rev$ $Date$ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.geronimo.genesis.config</groupId>
+        <artifactId>project-config</artifactId>
+        <version>1.2-SNAPSHOT</version>
+    </parent>
+
+    <groupId>org.apache.geronimo.components</groupId>
+    <artifactId>geronimo-connector</artifactId>
+    <version>2.0-SNAPSHOT</version>
+    <name>Geronimo :: Connector</name>
+
+    <dependencies>
+<!--        
+        <dependency>
+            <groupId>org.apache.geronimo.modules</groupId>
+            <artifactId>geronimo-naming</artifactId>
+            <version>${version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.modules</groupId>
+            <artifactId>geronimo-deployment</artifactId>
+            <version>${version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.modules</groupId>
+            <artifactId>geronimo-security</artifactId>
+            <version>${version}</version>
+        </dependency>
+-->
+        <!-- g-system, g-management come from this via g-j2ee -->
+        <dependency>
+            <groupId>org.apache.geronimo.components</groupId>
+            <artifactId>geronimo-transaction</artifactId>
+            <version>${version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-j2ee-connector_1.5_spec</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+<!--
+        <dependency>
+            <groupId>org.tranql</groupId>
+            <artifactId>tranql</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+-->
+        <!-- needed for passwordcredential realm-->
+<!--
+        <dependency>
+            <groupId>regexp</groupId>
+            <artifactId>regexp</artifactId>
+        </dependency>
+-->
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.geronimo.plugins</groupId>
+                    <artifactId>car-maven-plugin</artifactId>
+                    <version>${version}</version>
+                    <extensions>true</extensions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.0-alpha-2</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>2.0-alpha-4</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>groovy-maven-plugin</artifactId>
+                    <version>1.0-alpha-2</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>selenium-maven-plugin</artifactId>
+                    <version>1.0-beta-2-SNAPSHOT</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>xmlbeans-maven-plugin</artifactId>
+                    <version>2.3.1-20070720.222301-1</version>
+
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>xmlbeans</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+
+                    <configuration>
+                        <download>true</download>
+                        <quiet>false</quiet>
+                    </configuration>
+                </plugin>
+
+
+                <plugin>
+                    <groupId>org.codehaus.mojo.jspc</groupId>
+                    <artifactId>jspc-maven-plugin</artifactId>
+                    <version>2.0-SNAPSHOT</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                 <goal>compile</goal>
+                            </goals>
+                            <configuration>
+                                <warSourceDirectory>${pom.basedir}/src/main/webapp</warSourceDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    
+                    <!-- Use the Tomcat 6 JSP compiler, but with our custom Jasper version -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.codehaus.mojo.jspc</groupId>
+                            <artifactId>jspc-compiler-tomcat6</artifactId>
+                            <version>2.0-SNAPSHOT</version>
+                            <exclusions>
+                                <exclusion>
+                                    <groupId>org.apache.tomcat</groupId>
+                                    <artifactId>jasper</artifactId>
+                                </exclusion>
+                            </exclusions>
+                        </dependency>
+                        
+                        <dependency>
+                            <groupId>org.apache.tomcat</groupId>
+                            <artifactId>jasper</artifactId>
+                            <version>6.0.13-G543818</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>sql-maven-plugin</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                
+                <!--
+                FIXME: Should not configure war to assume jsp by default
+                -->
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>2.0.2</version>
+                    <configuration>
+                        <warSourceDirectory>${pom.basedir}/src/main/webapp</warSourceDirectory>
+                        <webXml>${project.build.directory}/jspweb.xml</webXml>
+                        <archiveClasses>true</archiveClasses>
+                        <archive>
+                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
+                            <addMavenDescriptor>false</addMavenDescriptor>
+                        </archive>
+                        
+                        <!--
+                        HACK: Include legal files explicity, otherwise they will end up in the wrong path
+                              or in another jar file in the war.
+                        
+                        NOTE: targetPath is broken for webResources (as documented)
+                        -->
+                        <webResources>
+                            <resource>
+                                <directory>${project.build.outputDirectory}</directory>
+                                <includes>
+                                    <include>META-INF/LICENSE*</include>
+                                    <include>META-INF/NOTICE*</include>
+                                    <include>META-INF/DISCLAIMER*</include>
+                                </includes>
+                            </resource>
+                        </webResources>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-ear-plugin</artifactId>
+                    <version>2.3</version>
+                    <configuration>
+                        <archive>
+                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
+                            <addMavenDescriptor>false</addMavenDescriptor>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-rar-plugin</artifactId>
+                    <version>2.2</version>
+                    <configuration>
+                        <archive>
+                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
+                            <addMavenDescriptor>false</addMavenDescriptor>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <archive>
+                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
+                            <addMavenDescriptor>false</addMavenDescriptor>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.geronimo.plugins</groupId>
+                    <artifactId>geronimo-maven-plugin</artifactId>
+                    <version>${version}</version>
+
+                    <configuration>
+                        <assemblies>
+                            <assembly>
+                                <id>jetty</id>
+                                <groupId>org.apache.geronimo.assemblies</groupId>
+                                <artifactId>geronimo-jetty6-jee5</artifactId>
+                                <version>${version}</version>
+                                <classifier>bin</classifier>
+                                <type>zip</type>
+                            </assembly>
+
+                            <assembly>
+                                <id>jetty-minimal</id>
+                                <groupId>org.apache.geronimo.assemblies</groupId>
+                                <artifactId>geronimo-jetty6-minimal</artifactId>
+                                <version>${version}</version>
+                                <classifier>bin</classifier>
+                                <type>zip</type>
+                            </assembly>
+
+                            <assembly>
+                                <id>tomcat</id>
+                                <groupId>org.apache.geronimo.assemblies</groupId>
+                                <artifactId>geronimo-tomcat6-jee5</artifactId>
+                                <version>${version}</version>
+                                <classifier>bin</classifier>
+                                <type>zip</type>
+                            </assembly>
+
+                            <assembly>
+                                <id>tomcat-minimal</id>
+                                <groupId>org.apache.geronimo.assemblies</groupId>
+                                <artifactId>geronimo-tomcat6-minimal</artifactId>
+                                <version>${version}</version>
+                                <classifier>bin</classifier>
+                                <type>zip</type>
+                            </assembly>
+                            
+                            <assembly>
+                                <id>framework</id>
+                                <groupId>org.apache.geronimo.assemblies</groupId>
+                                <artifactId>geronimo-framework</artifactId>
+                                <version>${version}</version>
+                                <classifier>bin</classifier>
+                                <type>zip</type>
+                            </assembly>
+                        </assemblies>
+
+                        <defaultAssemblyId>jetty</defaultAssemblyId>
+
+                        <optionSets>
+                            <optionSet>
+                                <id>morememory</id>
+                                <options>
+                                    <option>-Xmx512m</option>
+                                    <option>-XX:MaxPermSize=128m</option>
+                                </options>
+                            </optionSet>
+
+                            <optionSet>
+                                <id>debug</id>
+                                <options>
+                                    <option>-Xdebug</option>
+                                    <option>-Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n</option>
+                                </options>
+                            </optionSet>
+                        </optionSets>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <!-- Allow any Java >= 1.5, but not 1.6 or above -->
+                                <requireJavaVersion>
+                                    <version>[1.5,1.6)</version>
+                                </requireJavaVersion>
+                                
+                                <!-- Allow any Maven >= 2.0.5 -->
+                                <requireMavenVersion>
+                                    <version>[2.0.5,)</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.geronimo.genesis.plugins</groupId>
+                <artifactId>tools-maven-plugin</artifactId>
+
+                <!-- Tools includes custom packagings, install as extension to pick them up -->
+                <extensions>true</extensions>
+
+                <executions>
+                    <execution>
+                        <id>install-legal-files</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>copy-legal-files</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Fail the build if no legal files were copied -->
+                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>verify-legal-files</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>verify-legal-files</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Fail the build if no legal files were found -->
+                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-idea-plugin</artifactId>
+                <configuration>
+                    <jdkName>1.5</jdkName>
+                    <jdkLevel>1.5</jdkLevel>
+                    <linkModules>true</linkModules>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <tagBase>https://svn.apache.org/repos/asf/geronimo/server/tags</tagBase>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+
