@@ -41,15 +41,24 @@ public class GenericConnectionManager extends AbstractConnectionManager {
         super();
     }
 
+    /**
+     *
+     * @param transactionSupport configuration of transaction support
+     * @param pooling configuration of pooling
+     * @param subjectSource If not null, use container managed security, getting the Subject from the SubjectSource
+     * @param connectionTracker tracks connections between calls as needed
+     * @param transactionManager transaction manager
+     * @param name name
+     * @param classLoader classloader this component is running in.
+     */
     public GenericConnectionManager(TransactionSupport transactionSupport,
                                     PoolingSupport pooling,
-                                    boolean containerManagedSecurity,
                                     SubjectSource subjectSource,
                                     ConnectionTracker connectionTracker,
                                     RecoverableTransactionManager transactionManager,
-                                    String objectName,
+                                    String name,
                                     ClassLoader classLoader) {
-        super(new InterceptorsImpl(transactionSupport, pooling, containerManagedSecurity, subjectSource, objectName, connectionTracker, transactionManager, classLoader), transactionManager);
+        super(new InterceptorsImpl(transactionSupport, pooling, subjectSource, name, connectionTracker, transactionManager, classLoader), transactionManager);
     }
 
     private static class InterceptorsImpl implements AbstractConnectionManager.Interceptors {
@@ -73,13 +82,13 @@ public class GenericConnectionManager extends AbstractConnectionManager {
          */
         public InterceptorsImpl(TransactionSupport transactionSupport,
                                 PoolingSupport pooling,
-                                boolean containerManagedSecurity,
-                                SubjectSource subjectSource, String objectName,
+                                SubjectSource subjectSource,
+                                String name,
                                 ConnectionTracker connectionTracker,
                                 TransactionManager transactionManager,
                                 ClassLoader classLoader) {
             //check for consistency between attributes
-            if (!containerManagedSecurity && pooling instanceof PartitionedPool && ((PartitionedPool) pooling).isPartitionBySubject()) {
+            if (subjectSource == null && pooling instanceof PartitionedPool && ((PartitionedPool) pooling).isPartitionBySubject()) {
                 throw new IllegalStateException("To use Subject in pooling, you need a SecurityDomain");
             }
 
@@ -87,16 +96,16 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             MCFConnectionInterceptor tail = new MCFConnectionInterceptor();
             ConnectionInterceptor stack = tail;
 
-            stack = transactionSupport.addXAResourceInsertionInterceptor(stack, objectName);
+            stack = transactionSupport.addXAResourceInsertionInterceptor(stack, name);
             stack = pooling.addPoolingInterceptors(stack);
             if (log.isTraceEnabled()) {
-                log.trace("Connection Manager " + objectName + " installed pool " + stack);
+                log.trace("Connection Manager " + name + " installed pool " + stack);
             }
 
             this.poolingSupport = pooling;
             stack = transactionSupport.addTransactionInterceptors(stack, transactionManager);
 
-            if (containerManagedSecurity) {
+            if (subjectSource != null) {
                 stack = new SubjectInterceptor(stack, subjectSource);
             }
 
@@ -111,7 +120,7 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             stack = new TCCLInterceptor(stack, classLoader);
             if (connectionTracker != null) {
                 stack = new ConnectionTrackingInterceptor(stack,
-                        objectName,
+                        name,
                         connectionTracker);
             }
             tail.setStack(stack);

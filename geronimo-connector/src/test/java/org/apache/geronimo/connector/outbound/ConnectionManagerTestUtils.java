@@ -110,7 +110,6 @@ public class ConnectionManagerTestUtils extends TestCase implements DefaultInter
         connectionManagerDeployment = new GenericConnectionManager(
                 transactionSupport,
                 poolingSupport,
-                containerManagedSecurity,
                 subjectSource, connectionTrackingCoordinator,
                 this.transactionManager,
                 name,
