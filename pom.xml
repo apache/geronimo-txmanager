@@ -23,31 +23,87 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.geronimo.components</groupId>
-        <artifactId>geronimo-txmanager-parent</artifactId>
-        <version>2.0-SNAPSHOT</version>
+        <groupId>org.apache.geronimo.genesis.config</groupId>
+        <artifactId>project-config</artifactId>
+        <version>1.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>geronimo-connector</artifactId>
+    <groupId>org.apache.geronimo.components</groupId>
+    <artifactId>geronimo-txmanager-parent</artifactId>
     <version>2.0-SNAPSHOT</version>
-    <name>Geronimo :: Connector</name>
+    <packaging>pom</packaging>
+    <name>Geronimo :: TxManager :: Parent</name>
 
+    <modules>
+        <module>geronimo-transaction</module>
+        <module>geronimo-connector</module>
+    </modules>
+
+    <dependencyManagement>
     <dependencies>
 
         <dependency>
-            <groupId>org.apache.geronimo.components</groupId>
-            <artifactId>geronimo-transaction</artifactId>
-            <version>${version}</version>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.0.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-jta_1.1_spec</artifactId>
+            <version>1.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-j2ee-connector_1.5_spec</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.objectweb.howl</groupId>
+            <artifactId>howl</artifactId>
+            <version>1.0.1-1</version>
         </dependency>
 
     </dependencies>
+    </dependencyManagement>
 
-    <build><!--
+    <build>
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.0-alpha-2</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>2.0-alpha-4</version>
+                </plugin>
+                
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <archive>
+                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
+                            <addMavenDescriptor>false</addMavenDescriptor>
+                        </archive>
+                    </configuration>
+                    <executions>
+                      <execution>
+                        <goals>
+                          <goal>test-jar</goal>
+                        </goals>
+                      </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
         <plugins>
             <plugin>
@@ -61,12 +117,12 @@
                         </goals>
                         <configuration>
                             <rules>
-                                --><!-- Allow any Java >= 1.5, but not 1.6 or above --><!--
+                                <!-- Allow any Java >= 1.5, but not 1.6 or above -->
                                 <requireJavaVersion>
                                     <version>[1.5,1.6)</version>
                                 </requireJavaVersion>
                                 
-                                --><!-- Allow any Maven >= 2.0.5 --><!--
+                                <!-- Allow any Maven >= 2.0.5 -->
                                 <requireMavenVersion>
                                     <version>[2.0.5,)</version>
                                 </requireMavenVersion>
@@ -80,7 +136,7 @@
                 <groupId>org.apache.geronimo.genesis.plugins</groupId>
                 <artifactId>tools-maven-plugin</artifactId>
 
-                --><!-- Tools includes custom packagings, install as extension to pick them up --><!--
+                <!-- Tools includes custom packagings, install as extension to pick them up -->
                 <extensions>true</extensions>
 
                 <executions>
@@ -91,7 +147,7 @@
                             <goal>copy-legal-files</goal>
                         </goals>
                         <configuration>
-                            --><!-- Fail the build if no legal files were copied --><!--
+                            <!-- Fail the build if no legal files were copied -->
                             <strict>true</strict>
                         </configuration>
                     </execution>
@@ -103,8 +159,8 @@
                             <goal>verify-legal-files</goal>
                         </goals>
                         <configuration>
-                            --><!-- Fail the build if no legal files were found --><!--
-                            --><!--<strict>true</strict>--><!--
+                            <!-- Fail the build if no legal files were found -->
+                            <!--<strict>true</strict>-->
                             <strict>false</strict>
                         </configuration>
                     </execution>
@@ -138,7 +194,7 @@
                 </configuration>
             </plugin>
         </plugins>
-    --></build>
+    </build>
 
 </project>
 

@@ -24,12 +24,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.geronimo.genesis.config</groupId>
-        <artifactId>project-config</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <groupId>org.apache.geronimo.components</groupId>
+        <artifactId>geronimo-txmanager-parent</artifactId>
+        <version>2.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.geronimo.components</groupId>
     <artifactId>geronimo-transaction</artifactId>
     <version>2.0-SNAPSHOT</version>
     <name>Geronimo :: Transaction</name>
@@ -39,25 +38,21 @@
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>1.0.4</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-jta_1.1_spec</artifactId>
-            <version>1.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-j2ee-connector_1.5_spec</artifactId>
-            <version>1.1.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.objectweb.howl</groupId>
             <artifactId>howl</artifactId>
-            <version>1.0.1-1</version>
         </dependency>
 
     </dependencies>
