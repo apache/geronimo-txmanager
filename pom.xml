@@ -32,62 +32,87 @@
     <artifactId>geronimo-txmanager-parent</artifactId>
     <version>2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Geronimo :: TxManager :: Parent</name>
+    <name>Geronimo TxManager</name>
+    
+    <scm>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/components/txmanager/trunk</url>
+    </scm>
+    
+    <properties>
+        <!--
+        NOTE: Project version, to be used instead of ${pom.version} since that
+              value magically changes when using SNAPSHOT versions.
+
+              This value *must* be kept in sync with the value of the <version>
+              element, and it will need to be changed manually before a release,
+              as the maven-release-plugin will not update this value.
+        -->
+        <version>2.0-SNAPSHOT</version>
+    </properties>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.0.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.geronimo.specs</groupId>
+                <artifactId>geronimo-jta_1.1_spec</artifactId>
+                <version>1.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.geronimo.specs</groupId>
+                <artifactId>geronimo-j2ee-connector_1.5_spec</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.objectweb.howl</groupId>
+                <artifactId>howl</artifactId>
+                <version>1.0.1-1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <modules>
         <module>geronimo-transaction</module>
         <module>geronimo-connector</module>
     </modules>
 
-    <dependencyManagement>
-    <dependencies>
-
-        <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.0.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-jta_1.1_spec</artifactId>
-            <version>1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-j2ee-connector_1.5_spec</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.objectweb.howl</groupId>
-            <artifactId>howl</artifactId>
-            <version>1.0.1-1</version>
-        </dependency>
-
-    </dependencies>
-    </dependencyManagement>
-
     <build>
         <pluginManagement>
             <plugins>
-
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.0-alpha-2</version>
+                    <version>1.0-alpha-3</version>
+                </plugin>
+                
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.3</version>
+                    <configuration>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    </configuration>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>2.0-alpha-4</version>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.2</version>
                 </plugin>
                 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.1</version>
                     <configuration>
                         <archive>
                             <!-- Do not include META-INF/maven to avoid long file problems on windows -->
@@ -95,11 +120,12 @@
                         </archive>
                     </configuration>
                     <executions>
-                      <execution>
-                        <goals>
-                          <goal>test-jar</goal>
-                        </goals>
-                      </execution>
+                        <execution>
+                            <goals>
+                                <!-- Build *test.jar files for modules -->
+                                <goal>test-jar</goal>
+                            </goals>
+                        </execution>
                     </executions>
                 </plugin>
             </plugins>
@@ -147,7 +173,6 @@
                             <goal>copy-legal-files</goal>
                         </goals>
                         <configuration>
-                            <!-- Fail the build if no legal files were copied -->
                             <strict>true</strict>
                         </configuration>
                     </execution>
@@ -159,17 +184,39 @@
                             <goal>verify-legal-files</goal>
                         </goals>
                         <configuration>
-                            <!-- Fail the build if no legal files were found -->
-                            <!--<strict>true</strict>-->
+                             <!--
+                             FIXME: Need to resolve legal muck in *-test.jar files from jar:test-jar before we can make this strict again.
+                             -->
                             <strict>false</strict>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
+            
+            <!--
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <version>1.0-alpha-5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <resourceBundles>
+                                <resourceBundle>org.apache:apache-jar-resource-bundle:1.0</resourceBundle>
+                            </resourceBundles>
+                        </configuration>
+                  </execution>
+               </executions>
+            </plugin>
+            -->
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.0</version>
                 <configuration>
                     <source>1.5</source>
                     <target>1.5</target>
@@ -179,18 +226,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-idea-plugin</artifactId>
+                <version>2.1</version>
                 <configuration>
                     <jdkName>1.5</jdkName>
                     <jdkLevel>1.5</jdkLevel>
                     <linkModules>true</linkModules>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <tagBase>https://svn.apache.org/repos/asf/geronimo/components/txmanager/tags</tagBase>
                 </configuration>
             </plugin>
         </plugins>
