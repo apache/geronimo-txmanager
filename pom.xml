@@ -184,34 +184,11 @@
                             <goal>verify-legal-files</goal>
                         </goals>
                         <configuration>
-                             <!--
-                             FIXME: Need to resolve legal muck in *-test.jar files from jar:test-jar before we can make this strict again.
-                             -->
-                            <strict>false</strict>
+                            <strict>true</strict>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-remote-resources-plugin</artifactId>
-                <version>1.0-alpha-5</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>process</goal>
-                        </goals>
-                        <configuration>
-                            <resourceBundles>
-                                <resourceBundle>org.apache:apache-jar-resource-bundle:1.0</resourceBundle>
-                            </resourceBundles>
-                        </configuration>
-                  </execution>
-               </executions>
-            </plugin>
-            -->
             
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
