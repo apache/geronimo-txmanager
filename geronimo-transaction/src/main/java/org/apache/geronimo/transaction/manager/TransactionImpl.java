@@ -266,7 +266,7 @@ public class TransactionImpl implements Transaction {
             if (status == Status.STATUS_MARKED_ROLLBACK) {
                 rollbackResources(resourceManagers);
                 if (timedout) {
-                    throw new RollbackException("Transaction timout");
+                    throw new RollbackException("Transaction timeout");
                 } else {
                     throw new RollbackException("Unable to commit: transaction marked for rollback");
                 }
