@@ -95,6 +95,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         }
 
         recovery = new RecoveryImpl(this.transactionLog, this.xidFactory);
+        recovery.recoverLog();
     }
 
     public Transaction getTransaction() {
