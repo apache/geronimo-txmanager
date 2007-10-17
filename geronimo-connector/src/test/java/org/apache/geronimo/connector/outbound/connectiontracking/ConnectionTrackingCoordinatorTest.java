@@ -44,16 +44,16 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
     private ConnectionTrackingInterceptor key1;
     private ConnectionTrackingInterceptor nestedKey;
     private Subject subject = null;
-    private Set unshareableResources;
-    private Set applicationManagedSecurityResources;
+    private Set<String> unshareableResources;
+    private Set<String> applicationManagedSecurityResources;
 
     protected void setUp() throws Exception {
         super.setUp();
         connectionTrackingCoordinator = new ConnectionTrackingCoordinator(false);
         key1 = new ConnectionTrackingInterceptor(this, name1, connectionTrackingCoordinator);
         nestedKey = new ConnectionTrackingInterceptor(this, name2, connectionTrackingCoordinator);
-        unshareableResources = new HashSet();
-        applicationManagedSecurityResources = new HashSet();
+        unshareableResources = new HashSet<String>();
+        applicationManagedSecurityResources = new HashSet<String>();
     }
 
     protected void tearDown() throws Exception {
@@ -77,8 +77,8 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
         connectionTrackingCoordinator.exit(oldConnectorInstanceContext);
 
         // connection should be in component instance context
-        Map connectionManagerMap = componentContext.getConnectionManagerMap();
-        Set infos = (Set) connectionManagerMap.get(key1);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = componentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = connectionManagerMap.get(key1);
         assertNotNull("Expected one connections for key1", infos);
         assertEquals("Expected one connection for key1", 1, infos.size());
         assertTrue("Expected to get supplied ConnectionInfo from infos", connectionInfo == infos.iterator().next());
@@ -91,7 +91,7 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
 
         // connection should not be in context
         connectionManagerMap = componentContext.getConnectionManagerMap();
-        infos = (Set) connectionManagerMap.get(key1);
+        infos = connectionManagerMap.get(key1);
         assertEquals("Expected no connection set for key1", null, infos);
     }
 
@@ -125,8 +125,8 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
 
         // exit nested component context
         connectionTrackingCoordinator.exit(oldConnectorInstanceContext2);
-        Map nestedConnectionManagerMap = nextedComponentContext.getConnectionManagerMap();
-        Set nestedInfos = (Set) nestedConnectionManagerMap.get(nestedKey);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> nestedConnectionManagerMap = nextedComponentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> nestedInfos = nestedConnectionManagerMap.get(nestedKey);
         assertNotNull("Expected one connections for key2", nestedInfos);
         assertEquals("Expected one connection for key2", 1, nestedInfos.size());
         assertSame("Expected to get supplied ConnectionInfo from infos", nestedConnectionInfo, nestedInfos.iterator().next());
@@ -135,8 +135,8 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
 
         // exit outer component context
         connectionTrackingCoordinator.exit(oldConnectorInstanceContext1);
-        Map connectionManagerMap = componentContext1.getConnectionManagerMap();
-        Set infos1 = (Set) connectionManagerMap.get(key1);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = componentContext1.getConnectionManagerMap();
+        Set<ConnectionInfo> infos1 = connectionManagerMap.get(key1);
         assertNotNull("Expected one connections for key1", infos1);
         assertEquals("Expected one connection for key1", 1, infos1.size());
         assertSame("Expected to get supplied ConnectionInfo from infos", connectionInfo1, infos1.iterator().next());
@@ -150,7 +150,7 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
 
         // connection should not be in context
         connectionManagerMap = componentContext1.getConnectionManagerMap();
-        infos1 = (Set) connectionManagerMap.get(key1);
+        infos1 = connectionManagerMap.get(key1);
         assertNull("Expected no connection set for key1", infos1);
     }
 

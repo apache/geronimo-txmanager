@@ -17,10 +17,10 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.List;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ManagedConnection;
@@ -37,9 +37,9 @@ import javax.resource.spi.ManagedConnectionFactory;
  */
 public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolConnectionInterceptor {
 
-    private HashMap pool;
+    private Map<ManagedConnection, ManagedConnectionInfo> pool;
 
-    private int maxSize;
+    private final int maxSize;
 
     public SinglePoolMatchAllConnectionInterceptor(final ConnectionInterceptor next,
                                                    int maxSize,
@@ -49,7 +49,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
 
         super(next, maxSize, minSize, blockingTimeoutMilliseconds, idleTimeoutMinutes);
         this.maxSize = maxSize;
-        pool = new HashMap(maxSize);
+        pool = new HashMap<ManagedConnection, ManagedConnectionInfo>(maxSize);
     }
 
     protected void internalGetConnection(ConnectionInfo connectionInfo) throws ResourceException {
@@ -67,7 +67,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
                                     mci.getSubject(),
                                     mci.getConnectionRequestInfo());
                     if (matchedMC != null) {
-                        connectionInfo.setManagedConnectionInfo((ManagedConnectionInfo) pool.get(matchedMC));
+                        connectionInfo.setManagedConnectionInfo(pool.get(matchedMC));
                         pool.remove(matchedMC);
                         if (log.isTraceEnabled()) {
                             log.trace("Returning pooled connection " + connectionInfo.getManagedConnectionInfo());
@@ -143,14 +143,13 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
 
     protected void internalDestroy() {
         synchronized (pool) {
-            Iterator it = pool.keySet().iterator();
-            for (; it.hasNext(); ) {
+            for (ManagedConnection managedConnection : pool.keySet()) {
                 try {
-                    ((ManagedConnection)it.next()).destroy();
+                    managedConnection.destroy();
+                } catch (ResourceException ignore) {
                 }
-                catch (ResourceException re) { } // ignore
-                it.remove();
             }
+            pool.clear();
         }
     }
 
@@ -159,33 +158,35 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
     }
 
     public int getIdleConnectionCount() {
-        return pool.size();
+        synchronized (pool) {
+            return pool.size();
+        }
     }
 
     protected void transferConnections(int maxSize, int shrinkNow) {
         //1st example: copy 0 (none)
         //2nd example: copy 10 (all)
-        HashMap oldPool = pool;
-        pool = new HashMap(maxSize);
-        //since we have replaced pool already, pool.remove will be very fast:-)
-        assert oldPool.size() == connectionCount;
-        Iterator it = oldPool.entrySet().iterator();
-        for (int i = 0; i < shrinkNow; i++) {
-            ConnectionInfo killInfo = new ConnectionInfo((ManagedConnectionInfo) ((Map.Entry)it.next()).getValue());
-            internalReturn(killInfo, ConnectionReturnAction.DESTROY);
+        synchronized (pool) {
+            Map<ManagedConnection, ManagedConnectionInfo> oldPool = pool;
+            Map<ManagedConnection, ManagedConnectionInfo> newPool = new HashMap<ManagedConnection, ManagedConnectionInfo>(maxSize);
+            //since we have replaced pool already, pool.remove will be very fast:-)
+            assert oldPool.size() == connectionCount;
+            Iterator<Map.Entry<ManagedConnection, ManagedConnectionInfo>> it = oldPool.entrySet().iterator();
+            for (int i = 0; i < shrinkNow; i++) {
+                ConnectionInfo killInfo = new ConnectionInfo((ManagedConnectionInfo) ((Map.Entry)it.next()).getValue());
+                internalReturn(killInfo, ConnectionReturnAction.DESTROY);
+            }
+            for (; it.hasNext(); ) {
+                Map.Entry<ManagedConnection, ManagedConnectionInfo> entry = it.next();
+                newPool.put(entry.getKey(), entry.getValue());
+            }
+            pool = newPool;
         }
-        for (; it.hasNext(); ) {
-            Map.Entry entry = (Map.Entry) it.next();
-            pool.put(entry.getKey(), entry.getValue());
-        }
-
     }
 
-    protected void getExpiredManagedConnectionInfos(long threshold, ArrayList killList) {
+    protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
-            for (Iterator iterator = pool.entrySet().iterator(); iterator.hasNext();) {
-                Map.Entry entry = (Map.Entry) iterator.next();
-                ManagedConnectionInfo mci = (ManagedConnectionInfo) entry.getValue();
+            for (ManagedConnectionInfo mci : pool.values()) {
                 if (mci.getLastUsed() < threshold) {
                     killList.add(mci);
                 }

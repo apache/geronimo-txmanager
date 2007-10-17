@@ -17,9 +17,9 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ManagedConnection;
@@ -96,7 +96,6 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                     if (log.isTraceEnabled()) {
                         log.trace("Supplying pooled connection  MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
                     }
-                    return;
                 } else {
                     //matching failed.
                     ConnectionInfo returnCI = new ConnectionInfo();
@@ -194,7 +193,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
     }
 
 
-    protected void getExpiredManagedConnectionInfos(long threshold, ArrayList killList) {
+    protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
             for (int i = 0; i < pool.currentSize(); i++) {
                 ManagedConnectionInfo mci = pool.peek(i);

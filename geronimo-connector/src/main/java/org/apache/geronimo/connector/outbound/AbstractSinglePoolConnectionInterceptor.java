@@ -17,9 +17,9 @@
 package org.apache.geronimo.connector.outbound;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -269,7 +269,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
         }
     }
 
-    protected abstract void getExpiredManagedConnectionInfos(long threshold, ArrayList killList);
+    protected abstract void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList);
 
     protected abstract boolean addToPool(ManagedConnectionInfo mci);
 
@@ -296,10 +296,9 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
             interceptor.resizeLock.readLock().lock();
             try {
                 long threshold = System.currentTimeMillis() - interceptor.idleTimeoutMilliseconds;
-                ArrayList killList = new ArrayList(interceptor.getPartitionMaxSize());
+                List<ManagedConnectionInfo> killList = new ArrayList<ManagedConnectionInfo>(interceptor.getPartitionMaxSize());
                 interceptor.getExpiredManagedConnectionInfos(threshold, killList);
-                for (Iterator i = killList.iterator(); i.hasNext();) {
-                    ManagedConnectionInfo managedConnectionInfo = (ManagedConnectionInfo) i.next();
+                for (ManagedConnectionInfo managedConnectionInfo : killList) {
                     ConnectionInfo killInfo = new ConnectionInfo(managedConnectionInfo);
                     interceptor.internalReturn(killInfo, ConnectionReturnAction.DESTROY);
                 }

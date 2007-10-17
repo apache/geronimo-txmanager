@@ -73,8 +73,8 @@ public class ConnectionManagerTestUtils extends TestCase implements DefaultInter
     protected MockManagedConnectionFactory mockManagedConnectionFactory;
     protected ConnectorInstanceContextImpl connectorInstanceContext;
     protected DefaultComponentInterceptor defaultComponentInterceptor;
-    protected Set unshareableResources = new HashSet();
-    protected Set applicationManagedSecurityResources = new HashSet();
+    protected Set<String> unshareableResources = new HashSet<String>();
+    protected Set<String> applicationManagedSecurityResources = new HashSet<String>();
     protected MockManagedConnection mockManagedConnection;
     protected Subject subject;
     protected UserTransaction userTransaction;
@@ -93,6 +93,7 @@ public class ConnectionManagerTestUtils extends TestCase implements DefaultInter
     private ClassLoader classLoader = this.getClass().getClassLoader();
 
     protected void setUp() throws Exception {
+        super.setUp();
         TransactionManagerImpl transactionManager = new TransactionManagerImpl();
         this.transactionManager = transactionManager;
 
@@ -126,6 +127,7 @@ public class ConnectionManagerTestUtils extends TestCase implements DefaultInter
         connectionManagerDeployment = null;
         connectionFactory = null;
         connectorInstanceContext = null;
+        super.tearDown();
     }
 
     public Object invoke(ConnectorInstanceContext newConnectorInstanceContext) throws Throwable {

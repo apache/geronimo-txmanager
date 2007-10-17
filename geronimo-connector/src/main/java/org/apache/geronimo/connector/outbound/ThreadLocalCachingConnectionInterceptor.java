@@ -31,7 +31,7 @@ public class ThreadLocalCachingConnectionInterceptor implements ConnectionInterc
 
     private final ConnectionInterceptor next;
 
-    private final ThreadLocal connections = new ThreadLocal();
+    private final ThreadLocal<ManagedConnectionInfo> connections = new ThreadLocal<ManagedConnectionInfo>();
     private final boolean matchConnections;
 
     public ThreadLocalCachingConnectionInterceptor(final ConnectionInterceptor next, final boolean matchConnections) {
@@ -45,7 +45,7 @@ public class ThreadLocalCachingConnectionInterceptor implements ConnectionInterc
             next.getConnection(connectionInfo);
             return;
         }
-        ManagedConnectionInfo managedConnectionInfo = (ManagedConnectionInfo) connections.get();
+        ManagedConnectionInfo managedConnectionInfo = connections.get();
         if (managedConnectionInfo != null) {
             if (matchConnections) {
                 ManagedConnectionInfo mciRequest = connectionInfo.getManagedConnectionInfo();

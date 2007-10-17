@@ -18,7 +18,6 @@
 package org.apache.geronimo.connector.outbound;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.resource.ResourceException;
@@ -45,7 +44,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     private final boolean useCRI;
 
-    private final Map pools = new HashMap();
+    private final Map<SubjectCRIKey,PoolingAttributes> pools = new HashMap<SubjectCRIKey,PoolingAttributes>();
 
     // volatile is not necessary, here, because of synchronization. but maintained for consistency with other Interceptors...
     private volatile boolean destroyed = false;
@@ -75,7 +74,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
             poolInterceptor = (ConnectionInterceptor) pools.get(key);
             if (poolInterceptor == null) {
                 poolInterceptor = singlePoolFactory.addPoolingInterceptors(next);
-                pools.put(key, poolInterceptor);
+                pools.put(key, (PoolingAttributes) poolInterceptor);
             }
         }
         mci.setPoolInterceptor(poolInterceptor);
@@ -94,10 +93,11 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
     public void destroy() {
         synchronized (pools) {
             destroyed = true;
-            for (Iterator it = pools.entrySet().iterator(); it.hasNext(); ) {
-                ((ConnectionInterceptor)((Map.Entry)it.next()).getValue()).destroy();
-                it.remove();
+            for (PoolingAttributes poolingAttributes : pools.values()) {
+                ConnectionInterceptor poolInterceptor = (ConnectionInterceptor) poolingAttributes;
+                poolInterceptor.destroy();
             }
+            pools.clear();
         }
         next.destroy();
     }
@@ -112,8 +112,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     public void setPartitionMaxSize(int maxSize) throws InterruptedException {
         singlePoolFactory.setPartitionMaxSize(maxSize);
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             poolingAttributes.setPartitionMaxSize(maxSize);
         }
     }
@@ -124,16 +123,14 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     public void setPartitionMinSize(int minSize) {
         singlePoolFactory.setPartitionMinSize(minSize);
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             poolingAttributes.setPartitionMinSize(minSize);
         }
     }
 
     public int getIdleConnectionCount() {
         int count = 0;
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             count += poolingAttributes.getIdleConnectionCount();
         }
         return count;
@@ -141,8 +138,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     public int getConnectionCount() {
         int count = 0;
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             count += poolingAttributes.getConnectionCount();
         }
         return count;
@@ -154,8 +150,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     public void setBlockingTimeoutMilliseconds(int timeoutMilliseconds) {
         singlePoolFactory.setBlockingTimeoutMilliseconds(timeoutMilliseconds);
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             poolingAttributes.setBlockingTimeoutMilliseconds(timeoutMilliseconds);
         }
     }
@@ -166,8 +161,7 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
 
     public void setIdleTimeoutMinutes(int idleTimeoutMinutes) {
         singlePoolFactory.setIdleTimeoutMinutes(idleTimeoutMinutes);
-        for (Iterator iterator = pools.entrySet().iterator(); iterator.hasNext();) {
-            PoolingAttributes poolingAttributes = (PoolingAttributes) ((Map.Entry) iterator.next()).getValue();
+        for (PoolingAttributes poolingAttributes : pools.values()) {
             poolingAttributes.setIdleTimeoutMinutes(idleTimeoutMinutes);
         }
     }
@@ -194,15 +188,11 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
         public boolean equals(Object other) {
             if (!(other instanceof SubjectCRIKey)) {
                 return false;
-            } // end of if ()
+            }
             SubjectCRIKey o = (SubjectCRIKey) other;
-            if (hashcode != o.hashcode) {
-                return false;
-            } // end of if ()
-            return subject == null
-                    ? o.subject == null
-                    : subject.equals(o.subject)
-                    && cri == null ? o.cri == null : cri.equals(o.cri);
+            return hashcode == o.hashcode &&
+                    (subject == null ? o.subject == null : subject.equals(o.subject) && 
+                    cri == null ? o.cri == null : cri.equals(o.cri));
         }
     }
-} // MultiPoolConnectionInterceptor
+}

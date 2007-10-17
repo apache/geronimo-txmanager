@@ -95,19 +95,17 @@ public class ConnectionTrackingInterceptor implements ConnectionInterceptor {
         next.destroy();
     }
     
-    public void enter(Collection connectionInfos)
-            throws ResourceException {
-        for (Iterator i = connectionInfos.iterator(); i.hasNext();) {
-            ConnectionInfo connectionInfo = (ConnectionInfo) i.next();
+    public void enter(Collection<ConnectionInfo> connectionInfos) throws ResourceException {
+        for (ConnectionInfo connectionInfo : connectionInfos) {
             next.getConnection(connectionInfo);
         }
 
     }
 
-    public void exit(Collection connectionInfos)
+    public void exit(Collection<ConnectionInfo> connectionInfos)
             throws ResourceException {
-        for (Iterator i = connectionInfos.iterator(); i.hasNext();) {
-            ConnectionInfo connectionInfo = (ConnectionInfo) i.next();
+        for (Iterator<ConnectionInfo> iterator = connectionInfos.iterator(); iterator.hasNext();) {
+            ConnectionInfo connectionInfo = iterator.next();
             if (connectionInfo.isUnshareable()) {
                 //if one is, they all are
                 return;
@@ -116,7 +114,7 @@ public class ConnectionTrackingInterceptor implements ConnectionInterceptor {
             ManagedConnection managedConnection = managedConnectionInfo.getManagedConnection();
             if (managedConnection instanceof DissociatableManagedConnection
                     && managedConnectionInfo.isFirstConnectionInfo(connectionInfo)) {
-                i.remove();
+                iterator.remove();
                 ((DissociatableManagedConnection) managedConnection).dissociateConnections();
                 managedConnectionInfo.clearConnectionHandles();
                 //todo this needs some kind of check so cx isn't returned more than once
