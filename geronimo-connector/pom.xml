@@ -29,7 +29,13 @@
     </parent>
 
     <artifactId>geronimo-connector</artifactId>
+    <packaging>bundle</packaging>
     <name>Geronimo TxManager :: Connector</name>
+
+    <properties>
+        <geronimo.txmanager.osgi.export.pkg>org.apache.geronimo.connector</geronimo.txmanager.osgi.export.pkg>
+        <geronimo.txmanager.osgi.import.pkg>*</geronimo.txmanager.osgi.import.pkg>
+    </properties>
 
     <dependencies>
         <dependency>

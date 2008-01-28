@@ -29,7 +29,13 @@
     </parent>
 
     <artifactId>geronimo-transaction</artifactId>
+    <packaging>bundle</packaging>
     <name>Geronimo TxManager :: Transaction</name>
+
+    <properties>
+        <geronimo.txmanager.osgi.export.pkg>org.apache.geronimo.transaction</geronimo.txmanager.osgi.export.pkg>
+        <geronimo.txmanager.osgi.import.pkg>org.objectweb.howl*;resolution:=optional,*</geronimo.txmanager.osgi.import.pkg>
+    </properties>
 
     <dependencies>
         <dependency>
