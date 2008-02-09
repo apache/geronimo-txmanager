@@ -45,8 +45,7 @@ public class MCFConnectionInterceptor implements ConnectionInterceptor {
         }
         
         try {
-            ManagedConnection mc =
-                mci.getManagedConnectionFactory().createManagedConnection(
+            ManagedConnection mc = mci.getManagedConnectionFactory().createManagedConnection(
                         mci.getSubject(),
                         mci.getConnectionRequestInfo());
             mci.setManagedConnection(mc);
