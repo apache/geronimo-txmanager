@@ -30,7 +30,7 @@
 
     <groupId>org.apache.geronimo.components</groupId>
     <artifactId>geronimo-txmanager-parent</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
     
