@@ -17,7 +17,7 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,7 +43,9 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
 
     private boolean selectOneAssumeMatch;
 
-    private PoolDeque pool;
+    //pool is mutable but only changed when protected by write lock on resizelock in superclass
+//    private PoolDeque pool;
+    private final List<ManagedConnectionInfo> pool;
 
     public SinglePoolConnectionInterceptor(final ConnectionInterceptor next,
                                            int maxSize,
@@ -52,7 +54,8 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                                            int idleTimeoutMinutes,
                                            boolean selectOneAssumeMatch) {
         super(next, maxSize, minSize, blockingTimeoutMilliseconds, idleTimeoutMinutes);
-        pool = new PoolDeque(maxSize);
+//        pool = new PoolDeque(maxSize);
+        pool = new ArrayList<ManagedConnectionInfo>(maxSize);
         this.selectOneAssumeMatch = selectOneAssumeMatch;
     }
 
@@ -62,7 +65,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                 throw new ResourceException("ManagedConnection pool has been destroyed");
             }
 
-            ManagedConnectionInfo newMCI = null;
+            ManagedConnectionInfo newMCI;
             if (pool.isEmpty()) {
                 next.getConnection(connectionInfo);
                 connectionCount++;
@@ -71,7 +74,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                 }
                 return;
             } else {
-                newMCI = pool.removeLast();
+                newMCI = pool.remove(pool.size() - 1);
             }
             if (connectionCount < minSize) {
                 timer.schedule(new FillTask(connectionInfo), 10);
@@ -85,12 +88,9 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             }
             try {
                 ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-                ManagedConnection matchedMC =
-                        newMCI
-                        .getManagedConnectionFactory()
-                        .matchManagedConnections(Collections.singleton(newMCI.getManagedConnection()),
-                                mci.getSubject(),
-                                mci.getConnectionRequestInfo());
+                ManagedConnection matchedMC = newMCI.getManagedConnectionFactory().matchManagedConnections(Collections.singleton(newMCI.getManagedConnection()),
+                        mci.getSubject(),
+                        mci.getConnectionRequestInfo());
                 if (matchedMC != null) {
                     connectionInfo.setManagedConnectionInfo(newMCI);
                     if (log.isTraceEnabled()) {
@@ -100,16 +100,14 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                     //matching failed.
                     ConnectionInfo returnCI = new ConnectionInfo();
                     returnCI.setManagedConnectionInfo(newMCI);
-                    returnConnection(returnCI,
-                            ConnectionReturnAction.RETURN_HANDLE);
+                    returnConnection(returnCI, ConnectionReturnAction.RETURN_HANDLE);
                     throw new ResourceException("The pooling strategy does not match the MatchManagedConnections implementation.  Please investigate and reconfigure this pool");
                 }
             } catch (ResourceException e) {
                 //something is wrong: destroy connection, rethrow, release permit
                 ConnectionInfo returnCI = new ConnectionInfo();
                 returnCI.setManagedConnectionInfo(newMCI);
-                returnConnection(returnCI,
-                        ConnectionReturnAction.DESTROY);
+                returnConnection(returnCI, ConnectionReturnAction.DESTROY);
                 throw e;
             }
         }
@@ -118,167 +116,50 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
     protected void internalDestroy() {
         synchronized (pool) {
             while (!pool.isEmpty()) {
-                ManagedConnection mc = pool.removeLast().getManagedConnection();
+                ManagedConnection mc = pool.remove(pool.size() - 1).getManagedConnection();
                 if (mc != null) {
                     try {
                         mc.destroy();
                     }
-                    catch (ResourceException re) { } // ignore
+                    catch (ResourceException re) {
+                        //ignore
+                    }
                 }
             }
         }
     }
 
-    protected boolean internalReturn(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
-        ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-        ManagedConnection mc = mci.getManagedConnection();
-        if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE) {
-            try {
-                mc.cleanup();
-            } catch (ResourceException e) {
-                connectionReturnAction = ConnectionReturnAction.DESTROY;
-            }
-        }
-        boolean wasInPool = false;
-        synchronized (pool) {
-            // a bit redundant with returnConnection check in AbstractSinglePoolConnectionInterceptor, 
-            // but checking here closes a small timing hole...
-            if (destroyed) {
-                try {
-                    mc.destroy();
-                }
-                catch (ResourceException re) { } // ignore
-                return pool.remove(mci);
-            }
-
-            if (shrinkLater > 0) {
-                //nothing can get in the pool while shrinkLater > 0, so wasInPool is false here.
-                connectionReturnAction = ConnectionReturnAction.DESTROY;
-                shrinkLater--;
-            } else if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE) {
-                mci.setLastUsed(System.currentTimeMillis());
-                pool.add(mci);
-                return wasInPool;
-            } else {
-                wasInPool = pool.remove(mci);
-            }
-        }
-        //we must destroy connection.
-        next.returnConnection(connectionInfo, connectionReturnAction);
-        connectionCount--;
-        return wasInPool;
+    protected Object getPool() {
+        return pool;
     }
 
-    public int getPartitionMaxSize() {
-        return pool.capacity();
+    protected void doAdd(ManagedConnectionInfo mci) {
+        pool.add(mci);
+    }
+
+    protected boolean doRemove(ManagedConnectionInfo mci) {
+        return !pool.remove(mci);
     }
 
     protected void transferConnections(int maxSize, int shrinkNow) {
-        //1st example: copy 0 (none)
-        //2nd example: copy 10 (all)
-        PoolDeque oldPool = pool;
-        pool = new PoolDeque(maxSize);
-        //since we have replaced pool already, pool.remove will be very fast:-)
         for (int i = 0; i < shrinkNow; i++) {
-            ConnectionInfo killInfo = new ConnectionInfo(oldPool.peek(i));
+            ConnectionInfo killInfo = new ConnectionInfo(pool.get(0));
             internalReturn(killInfo, ConnectionReturnAction.DESTROY);
-        }
-        for (int i = shrinkNow; i < connectionCount; i++) {
-            pool.add(oldPool.peek(i));
         }
     }
 
     public int getIdleConnectionCount() {
-        return pool.currentSize();
+        return pool.size();
     }
 
 
     protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
-            for (int i = 0; i < pool.currentSize(); i++) {
-                ManagedConnectionInfo mci = pool.peek(i);
+            for (ManagedConnectionInfo mci : pool) {
                 if (mci.getLastUsed() < threshold) {
                     killList.add(mci);
                 }
             }
-        }
-    }
-
-    protected boolean addToPool(ManagedConnectionInfo mci) {
-        boolean added;
-        synchronized (pool) {
-            connectionCount++;
-            added = getPartitionMaxSize() > getIdleConnectionCount();
-            if (added) {
-                pool.add(mci);
-            }
-        }
-        return added;
-    }
-
-    static class PoolDeque {
-
-        private final ManagedConnectionInfo[] deque;
-        private final int first = 0;
-        private int last = -1;
-
-        public PoolDeque(int size) {
-            deque = new ManagedConnectionInfo[size];
-        }
-
-        //internal
-        public boolean isEmpty() {
-            return first > last;
-        }
-
-        //internal
-        public void add(ManagedConnectionInfo mci) {
-            if (last == deque.length - 1) {
-                throw new IllegalStateException("deque is full: contents: " + Arrays.asList(deque));
-            }
-            deque[++last] = mci;
-        }
-
-        //internal
-        public ManagedConnectionInfo peek(int i) {
-            if (i < first || i > last) {
-                throw new IllegalStateException("index is out of current range");
-            }
-            return deque[i];
-        }
-
-        //internal
-        public ManagedConnectionInfo removeLast() {
-            if (isEmpty()) {
-                throw new IllegalStateException("deque is empty");
-            }
-
-            return deque[last--];
-        }
-
-        //internal
-        public boolean remove(ManagedConnectionInfo mci) {
-            for (int i = first; i <= last; i++) {
-                if (deque[i] == mci) {
-                    for (int j = i + 1; j <= last; j++) {
-                        deque[j - 1] = deque[j];
-                    }
-                    last--;
-                    return true;
-                }
-
-            }
-            return false;
-        }
-
-        //internal
-        public int capacity() {
-            return deque.length;
-        }
-
-        //internal
-        public int currentSize() {
-            return last - first + 1;
         }
     }
 
