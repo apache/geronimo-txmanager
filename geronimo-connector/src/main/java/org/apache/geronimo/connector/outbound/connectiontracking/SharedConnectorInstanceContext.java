@@ -16,6 +16,9 @@
  */
 package org.apache.geronimo.connector.outbound.connectiontracking;
 
+import org.apache.geronimo.connector.outbound.ConnectionTrackingInterceptor;
+import org.apache.geronimo.connector.outbound.ConnectionInfo;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,18 +29,18 @@ import java.util.Set;
  */
 public class SharedConnectorInstanceContext implements ConnectorInstanceContext {
 
-    private Map connectionManagerMap = new HashMap();
+    private Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = new HashMap<ConnectionTrackingInterceptor, Set<ConnectionInfo>>();
 
-    private final Set unshareableResources;
-    private final Set applicationManagedSecurityResources;
+    private final Set<String> unshareableResources;
+    private final Set<String> applicationManagedSecurityResources;
 
     private boolean hide = false;
 
-    public SharedConnectorInstanceContext(Set unshareableResources, Set applicationManagedSecurityResources, boolean share) {
+    public SharedConnectorInstanceContext(Set<String> unshareableResources, Set<String> applicationManagedSecurityResources, boolean share) {
         this.unshareableResources = unshareableResources;
         this.applicationManagedSecurityResources = applicationManagedSecurityResources;
         if (!share) {
-            connectionManagerMap = new HashMap();
+            connectionManagerMap = new HashMap<ConnectionTrackingInterceptor, Set<ConnectionInfo>>();
         }
     }
 
@@ -49,18 +52,18 @@ public class SharedConnectorInstanceContext implements ConnectorInstanceContext 
         this.hide = true;
     }
 
-    public Map getConnectionManagerMap() {
+    public Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> getConnectionManagerMap() {
         if (hide) {
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
         }
         return connectionManagerMap;
     }
 
-    public Set getUnshareableResources() {
+    public Set<String> getUnshareableResources() {
         return unshareableResources;
     }
 
-    public Set getApplicationManagedSecurityResources() {
+    public Set<String> getApplicationManagedSecurityResources() {
         return applicationManagedSecurityResources;
     }
 }

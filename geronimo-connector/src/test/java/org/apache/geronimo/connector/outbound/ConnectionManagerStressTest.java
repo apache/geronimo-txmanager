@@ -66,7 +66,7 @@ public class ConnectionManagerStressTest extends ConnectionManagerTestUtils {
                         for (int i = 0; i < repeatCount; i++) {
                             try {
                                 long start = System.currentTimeMillis();
-                                defaultComponentInterceptor.invoke(new ConnectorInstanceContextImpl(new HashSet(), new HashSet()));
+                                defaultComponentInterceptor.invoke(new ConnectorInstanceContextImpl(new HashSet<String>(), new HashSet<String>()));
                                 long duration = System.currentTimeMillis() - start;
                                 if (duration > 100) {
                                     localSlowCount++;

@@ -129,7 +129,7 @@ public class ManagedConnectionInfo {
         listener.clearConnectionInfos();
     }
 
-    public Collection getConnectionInfos() {
+    public Collection<ConnectionInfo> getConnectionInfos() {
         return listener.getConnectionInfos();
     }
 

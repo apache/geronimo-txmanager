@@ -17,10 +17,11 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ManagedConnection;
@@ -37,9 +38,7 @@ import javax.resource.spi.ManagedConnectionFactory;
  */
 public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolConnectionInterceptor {
 
-    private HashMap pool;
-
-    private int maxSize;
+    private final Map<ManagedConnection, ManagedConnectionInfo> pool;
 
     public SinglePoolMatchAllConnectionInterceptor(final ConnectionInterceptor next,
                                                    int maxSize,
@@ -48,8 +47,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
                                                    int idleTimeoutMinutes) {
 
         super(next, maxSize, minSize, blockingTimeoutMilliseconds, idleTimeoutMinutes);
-        this.maxSize = maxSize;
-        pool = new HashMap(maxSize);
+        pool = new IdentityHashMap<ManagedConnection, ManagedConnectionInfo>(maxSize);
     }
 
     protected void internalGetConnection(ConnectionInfo connectionInfo) throws ResourceException {
@@ -57,153 +55,97 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             if (destroyed) {
                 throw new ResourceException("ManagedConnection pool has been destroyed");
             }
-            try {
-                if (!pool.isEmpty()) {
-                    ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-                    ManagedConnectionFactory managedConnectionFactory = mci.getManagedConnectionFactory();
-                    ManagedConnection matchedMC =
-                            managedConnectionFactory
-                            .matchManagedConnections(pool.keySet(),
-                                    mci.getSubject(),
-                                    mci.getConnectionRequestInfo());
-                    if (matchedMC != null) {
-                        connectionInfo.setManagedConnectionInfo((ManagedConnectionInfo) pool.get(matchedMC));
-                        pool.remove(matchedMC);
-                        if (log.isTraceEnabled()) {
-                            log.trace("Returning pooled connection " + connectionInfo.getManagedConnectionInfo());
-                        }
-                        if (connectionCount < minSize) {
-                            timer.schedule(new FillTask(connectionInfo), 10);
-                        }
-                        return;
+            if (!pool.isEmpty()) {
+                ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
+                ManagedConnectionFactory managedConnectionFactory = mci.getManagedConnectionFactory();
+                ManagedConnection matchedMC =
+                        managedConnectionFactory
+                                .matchManagedConnections(pool.keySet(),
+                                        mci.getSubject(),
+                                        mci.getConnectionRequestInfo());
+                if (matchedMC != null) {
+                    connectionInfo.setManagedConnectionInfo(pool.get(matchedMC));
+                    pool.remove(matchedMC);
+                    if (log.isTraceEnabled()) {
+                        log.trace("Returning pooled connection " + connectionInfo.getManagedConnectionInfo());
                     }
+                    if (connectionCount < minSize) {
+                        timer.schedule(new FillTask(connectionInfo), 10);
+                    }
+                    return;
                 }
-                //matching failed or pool is empty
-                //if pool is at maximum size, pick a cx to kill
-                if (connectionCount == maxSize) {
-                    Iterator iterator = pool.entrySet().iterator();
-                    ManagedConnectionInfo kill = (ManagedConnectionInfo) ((Map.Entry) iterator.next()).getValue();
-                    iterator.remove();
-                    ConnectionInfo killInfo = new ConnectionInfo(kill);
-                    internalReturn(killInfo, ConnectionReturnAction.DESTROY);
-                }
-                next.getConnection(connectionInfo);
-                connectionCount++;
-                if (log.isTraceEnabled()) {
-                    log.trace("Returning new connection " + connectionInfo.getManagedConnectionInfo());
-                }
-                if (connectionCount < minSize) {
-                    timer.schedule(new FillTask(connectionInfo), 10);
-                }
-
-            } catch (ResourceException e) {
-                //something is wrong: rethrow, release permit
-                permits.release();
-                throw e;
             }
+            //matching failed or pool is empty
+            //if pool is at maximum size, pick a cx to kill
+            if (connectionCount == maxSize) {
+                Iterator iterator = pool.entrySet().iterator();
+                ManagedConnectionInfo kill = (ManagedConnectionInfo) ((Map.Entry) iterator.next()).getValue();
+                iterator.remove();
+                ConnectionInfo killInfo = new ConnectionInfo(kill);
+                internalReturn(killInfo, ConnectionReturnAction.DESTROY);
+            }
+            next.getConnection(connectionInfo);
+            connectionCount++;
+            if (log.isTraceEnabled()) {
+                log.trace("Returning new connection " + connectionInfo.getManagedConnectionInfo());
+            }
+            if (connectionCount < minSize) {
+                timer.schedule(new FillTask(connectionInfo), 10);
+            }
+
         }
     }
 
-    protected boolean internalReturn(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
-        ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-        ManagedConnection mc = mci.getManagedConnection();
-        try {
-            mc.cleanup();
-        } catch (ResourceException e) {
-            connectionReturnAction = ConnectionReturnAction.DESTROY;
-        }
+    protected void doAdd(ManagedConnectionInfo mci) {
+        pool.put(mci.getManagedConnection(), mci);
+    }
 
-        boolean wasInPool = false;
-        synchronized (pool) {
-            // a bit redundant, but this closes a small timing hole...
-            if (destroyed) {
-                try {
-                    mc.destroy();
-                }
-                catch (ResourceException re) { } // ignore
-                return pool.remove(mci.getManagedConnection()) != null;
-            }
-            if (shrinkLater > 0) {
-                //nothing can get in the pool while shrinkLater > 0, so wasInPool is false here.
-                connectionReturnAction = ConnectionReturnAction.DESTROY;
-                shrinkLater--;
-            } else if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE) {
-                mci.setLastUsed(System.currentTimeMillis());
-                pool.put(mci.getManagedConnection(), mci);
-                return wasInPool;
-            } else {
-                wasInPool = pool.remove(mci.getManagedConnection()) != null;
-            }
-        }
-        //we must destroy connection.
-        next.returnConnection(connectionInfo, connectionReturnAction);
-        connectionCount--;
-        return wasInPool;
+    protected Object getPool() {
+        return pool;
+    }
+
+    protected boolean doRemove(ManagedConnectionInfo mci) {
+        return pool.remove(mci.getManagedConnection()) == null;
     }
 
     protected void internalDestroy() {
         synchronized (pool) {
-            Iterator it = pool.keySet().iterator();
-            for (; it.hasNext(); ) {
+            for (ManagedConnection managedConnection : pool.keySet()) {
                 try {
-                    ((ManagedConnection)it.next()).destroy();
+                    managedConnection.destroy();
+                } catch (ResourceException ignore) {
                 }
-                catch (ResourceException re) { } // ignore
-                it.remove();
             }
+            pool.clear();
         }
-    }
-
-    public int getPartitionMaxSize() {
-        return maxSize;
     }
 
     public int getIdleConnectionCount() {
-        return pool.size();
+        synchronized (pool) {
+            return pool.size();
+        }
     }
 
     protected void transferConnections(int maxSize, int shrinkNow) {
-        //1st example: copy 0 (none)
-        //2nd example: copy 10 (all)
-        HashMap oldPool = pool;
-        pool = new HashMap(maxSize);
-        //since we have replaced pool already, pool.remove will be very fast:-)
-        assert oldPool.size() == connectionCount;
-        Iterator it = oldPool.entrySet().iterator();
+        List<ConnectionInfo> killList = new ArrayList<ConnectionInfo>(shrinkNow);
+        Iterator<Map.Entry<ManagedConnection, ManagedConnectionInfo>> it = pool.entrySet().iterator();
         for (int i = 0; i < shrinkNow; i++) {
-            ConnectionInfo killInfo = new ConnectionInfo((ManagedConnectionInfo) ((Map.Entry)it.next()).getValue());
+            killList.add(new ConnectionInfo(it.next().getValue()));
+        }
+        for (ConnectionInfo killInfo: killList) {
             internalReturn(killInfo, ConnectionReturnAction.DESTROY);
         }
-        for (; it.hasNext(); ) {
-            Map.Entry entry = (Map.Entry) it.next();
-            pool.put(entry.getKey(), entry.getValue());
-        }
-
     }
 
-    protected void getExpiredManagedConnectionInfos(long threshold, ArrayList killList) {
+    protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
-            for (Iterator iterator = pool.entrySet().iterator(); iterator.hasNext();) {
-                Map.Entry entry = (Map.Entry) iterator.next();
-                ManagedConnectionInfo mci = (ManagedConnectionInfo) entry.getValue();
+            for (ManagedConnectionInfo mci : pool.values()) {
                 if (mci.getLastUsed() < threshold) {
                     killList.add(mci);
                 }
             }
         }
 
-    }
-
-    protected boolean addToPool(ManagedConnectionInfo mci) {
-        boolean added;
-        synchronized (pool) {
-            connectionCount++;
-            added = getPartitionMaxSize() > getIdleConnectionCount();
-            if (added) {
-                pool.put(mci.getManagedConnection(), mci);
-            }
-        }
-        return added;
     }
 
 }

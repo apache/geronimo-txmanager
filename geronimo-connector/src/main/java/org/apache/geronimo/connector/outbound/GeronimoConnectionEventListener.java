@@ -42,7 +42,7 @@ public class GeronimoConnectionEventListener implements ConnectionEventListener 
 
     private final ManagedConnectionInfo managedConnectionInfo;
     private final ConnectionInterceptor stack;
-    private final List connectionInfos = new ArrayList();
+    private final List<ConnectionInfo> connectionInfos = new ArrayList<ConnectionInfo>();
     private boolean errorOccurred = false;
 
     public GeronimoConnectionEventListener(
@@ -143,7 +143,7 @@ public class GeronimoConnectionEventListener implements ConnectionEventListener 
         return !connectionInfos.isEmpty() && connectionInfos.get(0) == connectionInfo;
     }
 
-    public Collection getConnectionInfos() {
+    public Collection<ConnectionInfo> getConnectionInfos() {
         return Collections.unmodifiableCollection(connectionInfos);
     }
 

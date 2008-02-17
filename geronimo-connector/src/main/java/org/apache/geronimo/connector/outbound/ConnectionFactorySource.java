@@ -32,6 +32,10 @@ public interface ConnectionFactorySource {
     // not be likely to be called by the casual observer.
     //
 
+   /**
+    * @depricated Removed in v2.1.1
+    */
     Object $getResource() throws ResourceException;
 
 }
+

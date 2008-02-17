@@ -17,6 +17,9 @@
 
 package org.apache.geronimo.connector.outbound.connectiontracking;
 
+import org.apache.geronimo.connector.outbound.ConnectionTrackingInterceptor;
+import org.apache.geronimo.connector.outbound.ConnectionInfo;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -29,24 +32,24 @@ import java.util.Set;
  *
  * */
 public class ConnectorInstanceContextImpl implements ConnectorInstanceContext {
-    private final Map connectionManagerMap = new HashMap();
-    private final Set unshareableResources;
-    private final Set applicationManagedSecurityResources;
+    private final Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = new HashMap<ConnectionTrackingInterceptor, Set<ConnectionInfo>>();
+    private final Set<String> unshareableResources;
+    private final Set<String> applicationManagedSecurityResources;
 
-    public ConnectorInstanceContextImpl(Set unshareableResources, Set applicationManagedSecurityResources) {
+    public ConnectorInstanceContextImpl(Set<String> unshareableResources, Set<String> applicationManagedSecurityResources) {
         this.unshareableResources = unshareableResources;
         this.applicationManagedSecurityResources = applicationManagedSecurityResources;
     }
 
-    public Map getConnectionManagerMap() {
+    public Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> getConnectionManagerMap() {
         return connectionManagerMap;
     }
 
-    public Set getUnshareableResources() {
+    public Set<String> getUnshareableResources() {
         return unshareableResources;
     }
 
-    public Set getApplicationManagedSecurityResources() {
+    public Set<String> getApplicationManagedSecurityResources() {
         return applicationManagedSecurityResources;
     }
 }

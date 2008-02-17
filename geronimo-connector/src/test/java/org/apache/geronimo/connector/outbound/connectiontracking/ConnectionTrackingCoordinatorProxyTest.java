@@ -46,8 +46,8 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
     private ConnectionTrackingCoordinator connectionTrackingCoordinator;
     private ConnectionTrackingInterceptor key1;
     private Subject subject = null;
-    private Set unshareableResources;
-    private Set applicationManagedSecurityResources;
+    private Set<String> unshareableResources;
+    private Set<String> applicationManagedSecurityResources;
     private ManagedConnectionInfo mci;
     private ConnectionImpl connection;
 
@@ -55,8 +55,8 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
         super.setUp();
         connectionTrackingCoordinator = new ConnectionTrackingCoordinator(true);
         key1 = new ConnectionTrackingInterceptor(this, name1, connectionTrackingCoordinator);
-        unshareableResources = new HashSet();
-        applicationManagedSecurityResources = new HashSet();
+        unshareableResources = new HashSet<String>();
+        applicationManagedSecurityResources = new HashSet<String>();
 
         mci = new ManagedConnectionInfo(null, null);
         mci.setManagedConnection(new MockManagedConnection());
@@ -81,8 +81,8 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
         connectionTrackingCoordinator.handleObtained(key1, connectionInfo, false);
 
         // connection should be in component instance context
-        Map connectionManagerMap = componentContext.getConnectionManagerMap();
-        Set infos = (Set) connectionManagerMap.get(key1);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = componentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = connectionManagerMap.get(key1);
         assertNotNull("Expected one connections for key1", infos);
         assertEquals("Expected one connection for key1", 1, infos.size());
         assertTrue("Expected to get supplied ConnectionInfo from infos", connectionInfo == infos.iterator().next());
@@ -108,7 +108,7 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
 
         // connection should not be in context
         connectionManagerMap = componentContext.getConnectionManagerMap();
-        infos = (Set) connectionManagerMap.get(key1);
+        infos = connectionManagerMap.get(key1);
         assertEquals("Expected no connection set for key1", null, infos);
 
         // enter again, and close the handle
@@ -135,8 +135,8 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
         connectionTrackingCoordinator.handleObtained(key1, connectionInfo, false);
 
         // connection should be in component instance context
-        Map connectionManagerMap = componentContext.getConnectionManagerMap();
-        Set infos = (Set) connectionManagerMap.get(key1);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = componentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = connectionManagerMap.get(key1);
         assertNotNull("Expected one connections for key1", infos);
         assertEquals("Expected one connection for key1", 1, infos.size());
         assertTrue("Expected to get supplied ConnectionInfo from infos", connectionInfo == infos.iterator().next());
@@ -180,7 +180,7 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
 
         // connection should not be in context
         connectionManagerMap = componentContext.getConnectionManagerMap();
-        infos = (Set) connectionManagerMap.get(key1);
+        infos = connectionManagerMap.get(key1);
         assertNull("Expected no connection set for key1", infos);
 
         // use connection which will cause it to get a new handle if it is not closed
@@ -203,8 +203,8 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
         connectionTrackingCoordinator.handleObtained(key1, connectionInfo, false);
 
         // connection should be in component instance context
-        Map connectionManagerMap = componentContext.getConnectionManagerMap();
-        Set infos = (Set) connectionManagerMap.get(key1);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerMap = componentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = connectionManagerMap.get(key1);
         assertNotNull("Expected one connections for key1", infos);
         assertEquals("Expected one connection for key1", 1, infos.size());
         assertTrue("Expected to get supplied ConnectionInfo from infos", connectionInfo == infos.iterator().next());
@@ -246,7 +246,7 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
 
         // connection should not be in context
         connectionManagerMap = componentContext.getConnectionManagerMap();
-        infos = (Set) connectionManagerMap.get(key1);
+        infos = connectionManagerMap.get(key1);
         assertNull("Expected no connection set for key1", infos);
 
         // enter again

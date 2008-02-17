@@ -17,6 +17,9 @@
 
 package org.apache.geronimo.connector.outbound.connectiontracking;
 
+import org.apache.geronimo.connector.outbound.ConnectionTrackingInterceptor;
+import org.apache.geronimo.connector.outbound.ConnectionInfo;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -28,9 +31,9 @@ public interface ConnectorInstanceContext {
      * IMPORTANT INVARIANT: this should always return a map, never null.
      * @return map of ConnectionManager to (list of ) managed connection info objects.
      */
-    Map getConnectionManagerMap();
+    Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> getConnectionManagerMap();
 
-    Set getUnshareableResources();
+    Set<String> getUnshareableResources();
 
-    Set getApplicationManagedSecurityResources();
+    Set<String> getApplicationManagedSecurityResources();
 }

@@ -59,8 +59,8 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
     private static final Log log = LogFactory.getLog(ConnectionTrackingCoordinator.class.getName());
 
     private final boolean lazyConnect;
-    private final ThreadLocal currentInstanceContexts = new ThreadLocal();
-    private final ConcurrentMap proxiesByConnectionInfo = new ConcurrentHashMap();
+    private final ThreadLocal<ConnectorInstanceContext> currentInstanceContexts = new ThreadLocal<ConnectorInstanceContext>();
+    private final ConcurrentMap<ConnectionInfo,Object> proxiesByConnectionInfo = new ConcurrentHashMap<ConnectionInfo,Object>();
 
     public ConnectionTrackingCoordinator() {
         this(false);
@@ -75,25 +75,23 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
     }
 
     public ConnectorInstanceContext enter(ConnectorInstanceContext newContext) throws ResourceException {
-        ConnectorInstanceContext oldContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext oldContext = currentInstanceContexts.get();
         currentInstanceContexts.set(newContext);
         associateConnections(newContext);
         return oldContext;
     }
 
     private void associateConnections(ConnectorInstanceContext context) throws ResourceException {
-            Map connectionManagerToManagedConnectionInfoMap = context.getConnectionManagerMap();
-            for (Iterator i = connectionManagerToManagedConnectionInfoMap.entrySet().iterator(); i.hasNext();) {
-                Map.Entry entry = (Map.Entry) i.next();
-                ConnectionTrackingInterceptor mcci =
-                        (ConnectionTrackingInterceptor) entry.getKey();
-                Set connections = (Set) entry.getValue();
-                mcci.enter(connections);
-            }
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> connectionManagerToManagedConnectionInfoMap = context.getConnectionManagerMap();
+        for (Map.Entry<ConnectionTrackingInterceptor, Set<ConnectionInfo>> entry : connectionManagerToManagedConnectionInfoMap.entrySet()) {
+            ConnectionTrackingInterceptor mcci = entry.getKey();
+            Set<ConnectionInfo> connections = entry.getValue();
+            mcci.enter(connections);
+        }
     }
 
     public void newTransaction() throws ResourceException {
-        ConnectorInstanceContext currentContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext currentContext = currentInstanceContexts.get();
         if (currentContext == null) {
             return;
         }
@@ -101,20 +99,18 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
     }
 
     public void exit(ConnectorInstanceContext oldContext) throws ResourceException {
-        ConnectorInstanceContext currentContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext currentContext = currentInstanceContexts.get();
         try {
             // for each connection type opened in this componet
-            Map resources = currentContext.getConnectionManagerMap();
-            for (Iterator i = resources.entrySet().iterator(); i.hasNext();) {
-                Map.Entry entry = (Map.Entry) i.next();
-                ConnectionTrackingInterceptor mcci =
-                        (ConnectionTrackingInterceptor) entry.getKey();
-                Set connections = (Set) entry.getValue();
+            Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> resources = currentContext.getConnectionManagerMap();
+            for (Iterator<Map.Entry<ConnectionTrackingInterceptor, Set<ConnectionInfo>>> iterator = resources.entrySet().iterator(); iterator.hasNext();) {
+                Map.Entry<ConnectionTrackingInterceptor, Set<ConnectionInfo>> entry = iterator.next();
+                ConnectionTrackingInterceptor mcci = entry.getKey();
+                Set<ConnectionInfo> connections = entry.getValue();
 
                 // release proxy connections
                 if (lazyConnect) {
-                    for (Iterator infoIterator = connections.iterator(); infoIterator.hasNext();) {
-                        ConnectionInfo connectionInfo = (ConnectionInfo) infoIterator.next();
+                    for (ConnectionInfo connectionInfo : connections) {
                         releaseProxyConnection(connectionInfo);
                     }
                 }
@@ -124,7 +120,7 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
 
                 // if no connection remain clear context... we could support automatic commit, rollback or exception here
                 if (connections.isEmpty()) {
-                    i.remove();
+                    iterator.remove();
                 }
             }
         } finally {
@@ -147,15 +143,15 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
             ConnectionInfo connectionInfo,
             boolean reassociate) throws ResourceException {
 
-        ConnectorInstanceContext currentContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext currentContext = currentInstanceContexts.get();
         if (currentContext == null) {
             return;
         }
 
-        Map resources = currentContext.getConnectionManagerMap();
-        Set infos = (Set) resources.get(connectionTrackingInterceptor);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> resources = currentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = resources.get(connectionTrackingInterceptor);
         if (infos == null) {
-            infos = new HashSet();
+            infos = new HashSet<ConnectionInfo>();
             resources.put(connectionTrackingInterceptor, infos);
         }
 
@@ -178,18 +174,18 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
             ConnectionInfo connectionInfo,
             ConnectionReturnAction connectionReturnAction) {
 
-        ConnectorInstanceContext currentContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext currentContext = currentInstanceContexts.get();
         if (currentContext == null) {
             return;
         }
 
-        Map resources = currentContext.getConnectionManagerMap();
-        Set infos = (Set) resources.get(connectionTrackingInterceptor);
+        Map<ConnectionTrackingInterceptor, Set<ConnectionInfo>> resources = currentContext.getConnectionManagerMap();
+        Set<ConnectionInfo> infos = resources.get(connectionTrackingInterceptor);
         if (infos != null) {
             if (connectionInfo.getConnectionHandle() == null) {
                 //destroy was called as a result of an error
                 ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-                Collection toRemove = mci.getConnectionInfos();
+                Collection<ConnectionInfo> toRemove = mci.getConnectionInfos();
                 infos.removeAll(toRemove);
             } else {
                 infos.remove(connectionInfo);
@@ -216,15 +212,15 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
      * @param key the unique id of the connection manager
      */
     public void setEnvironment(ConnectionInfo connectionInfo, String key) {
-        ConnectorInstanceContext currentContext = (ConnectorInstanceContext) currentInstanceContexts.get();
+        ConnectorInstanceContext currentContext = currentInstanceContexts.get();
         if (currentContext != null) {
             // is this resource unshareable in this component context
-            Set unshareableResources = currentContext.getUnshareableResources();
+            Set<String> unshareableResources = currentContext.getUnshareableResources();
             boolean unshareable = unshareableResources.contains(key);
             connectionInfo.setUnshareable(unshareable);
 
             // does this resource use application managed security in this component context
-            Set applicationManagedSecurityResources = currentContext.getApplicationManagedSecurityResources();
+            Set<String> applicationManagedSecurityResources = currentContext.getApplicationManagedSecurityResources();
             boolean applicationManagedSecurity = applicationManagedSecurityResources.contains(key);
             connectionInfo.setApplicationManagedSecurity(applicationManagedSecurity);
         }

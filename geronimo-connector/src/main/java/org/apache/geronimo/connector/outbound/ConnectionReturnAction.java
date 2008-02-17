@@ -27,14 +27,12 @@ package org.apache.geronimo.connector.outbound;
  * @version 1.0
  */
 public class ConnectionReturnAction {
-
     public final static ConnectionReturnAction RETURN_HANDLE =
             new ConnectionReturnAction();
     public final static ConnectionReturnAction DESTROY =
             new ConnectionReturnAction();
 
     private ConnectionReturnAction() {
+    }
 
-    } // ConnectionReturnAction constructor
-
-} // ConnectionReturnAction
+}

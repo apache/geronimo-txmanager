@@ -88,6 +88,10 @@ public abstract class AbstractConnectionManager implements ConnectionManagerCont
         Object connection = ci.getConnectionProxy();
         if (connection == null) {
             connection = ci.getConnectionHandle();
+        } else {
+            // connection proxy is used only once so we can be notified
+            // by the garbage collector when a connection is abandoned 
+            ci.setConnectionProxy(null);
         }
         return connection;
     }

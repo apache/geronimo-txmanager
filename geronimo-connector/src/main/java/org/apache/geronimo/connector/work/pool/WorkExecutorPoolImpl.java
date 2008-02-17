@@ -47,7 +47,7 @@ public class WorkExecutorPoolImpl implements WorkExecutorPool {
      * @param maxSize Maximum size of the work executor pool.
      */
     public WorkExecutorPoolImpl(int maxSize) {
-        pooledExecutor = new ThreadPoolExecutor(1, maxSize, 60, TimeUnit.SECONDS, new LinkedBlockingQueue());
+        pooledExecutor = new ThreadPoolExecutor(1, maxSize, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         /*
         FIXME: How to do this with concurrent.util ?
         pooledExecutor.waitWhenBlocked();

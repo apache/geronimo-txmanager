@@ -29,6 +29,7 @@ import javax.transaction.xa.Xid;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.log.UnrecoverableLog;
@@ -53,6 +54,10 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     final Recovery recovery;
     private final CopyOnWriteArrayList transactionAssociationListeners = new CopyOnWriteArrayList();
     private List recoveryErrors = new ArrayList();
+    // statistics
+    private AtomicLong totalCommits = new AtomicLong(0);
+    private AtomicLong totalRollBacks = new AtomicLong(0);
+    private AtomicLong activeCount = new AtomicLong(0);
 
     public TransactionManagerImpl() throws XAException {
         this(DEFAULT_TIMEOUT,
@@ -79,7 +84,6 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (defaultTransactionTimeoutSeconds <= 0) {
             throw new IllegalArgumentException("defaultTransactionTimeoutSeconds must be positive: attempted value: " + defaultTransactionTimeoutSeconds);
         }
-
         this.defaultTransactionTimeoutMilliseconds = defaultTransactionTimeoutSeconds * 1000;
 
         if (transactionLog == null) {
@@ -111,6 +115,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         }
         threadTx.set(tx);
         fireThreadAssociated(tx);
+        activeCount.getAndIncrement();
     }
 
     private void unassociate() {
@@ -119,6 +124,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             associatedTransactions.remove(tx);
             threadTx.set(null);
             fireThreadUnassociated(tx);
+            activeCount.getAndDecrement();
         }
     }
 
@@ -240,6 +246,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         } finally {
             unassociate();
         }
+        totalCommits.getAndIncrement();
     }
 
     public void rollback() throws IllegalStateException, SecurityException, SystemException {
@@ -252,6 +259,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         } finally {
             unassociate();
         }
+        totalRollBacks.getAndIncrement();
     }
 
     //XidImporter implementation
@@ -285,6 +293,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
                 throw (XAException) new XAException().initCause(e);
             }
         }
+        totalCommits.getAndIncrement();
     }
 
     public void forget(Transaction tx) throws XAException {
@@ -309,6 +318,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         } catch (SystemException e) {
             throw (XAException) new XAException().initCause(e);
         }
+        totalRollBacks.getAndIncrement();
     }
 
     long getTransactionTimeoutMilliseconds(long transactionTimeoutMilliseconds) {
@@ -368,5 +378,34 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
                 log.warn("Error calling transaction association listener", e);
             }
         }
+    }
+
+    /**
+     * Returns the number of active transactions.
+     */
+    public long getActiveCount() {
+        return activeCount.longValue();
+    }
+
+    /**
+     * Return the number of total commits
+     */
+    public long getTotalCommits() {
+        return totalCommits.longValue();
+    }
+
+    /**
+     * Returns the number of total rollbacks
+     */
+    public long getTotalRollbacks() {
+        return totalRollBacks.longValue();
+    }
+
+    /**
+     * Reset statistics
+     */
+    public void resetStatistics() {
+        totalCommits.getAndSet(0);
+        totalRollBacks.getAndSet(0);
     }
 }
