@@ -21,11 +21,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-
+    
     <parent>
-        <groupId>org.apache.geronimo.genesis.config</groupId>
-        <artifactId>project-config</artifactId>
-        <version>1.3</version>
+        <groupId>org.apache.geronimo.genesis.flava</groupId>
+        <artifactId>genesis-java5-flava</artifactId>
+        <version>2.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.geronimo.components</groupId>
@@ -33,6 +33,10 @@
     <version>2.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
+    
+    <description>
+        Geronimo Transaction Manager
+    </description>
     
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</connection>
@@ -53,9 +57,9 @@
 
         <!-- OSGi properties -->
         <geronimo.txmanager.osgi.export>${geronimo.txmanager.osgi.export.pkg}*;version=${version}</geronimo.txmanager.osgi.export>
-        <geronimo.txmanager.osgi.export.pkg />
-        <geronimo.txmanager.osgi.import.pkg />
-        <geronimo.txmanager.osgi.private.pkg />
+        <geronimo.txmanager.osgi.export.pkg/>
+        <geronimo.txmanager.osgi.import.pkg/>
+        <geronimo.txmanager.osgi.private.pkg/>
     </properties>
     
     <dependencyManagement>
@@ -83,6 +87,20 @@
                 <artifactId>howl</artifactId>
                 <version>1.0.1-1</version>
             </dependency>
+            
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>3.8.2</version>
+            </dependency>
+            
+            <!-- INTERNAL -->
+            
+            <dependency>
+                <groupId>org.apache.geronimo.components</groupId>
+                <artifactId>geronimo-transaction</artifactId>
+                <version>2.2-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -96,29 +114,7 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.0-alpha-3</version>
-                </plugin>
-                
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.3</version>
-                    <configuration>
-                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>2.2</version>
-                </plugin>
-                
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.1</version>
                     <configuration>
                         <archive>
                             <!-- Do not include META-INF/maven to avoid long file problems on windows -->
@@ -133,6 +129,12 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>1.2.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -163,64 +165,10 @@
                     </execution>
                 </executions>
             </plugin>
-            
-            <plugin>
-                <groupId>org.apache.geronimo.genesis.plugins</groupId>
-                <artifactId>tools-maven-plugin</artifactId>
-
-                <!-- Tools includes custom packagings, install as extension to pick them up -->
-                <extensions>true</extensions>
-
-                <executions>
-                    <execution>
-                        <id>install-legal-files</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-legal-files</goal>
-                        </goals>
-                        <configuration>
-                            <strict>true</strict>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>verify-legal-files</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>verify-legal-files</goal>
-                        </goals>
-                        <configuration>
-                            <strict>true</strict>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.0</version>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-idea-plugin</artifactId>
-                <version>2.1</version>
-                <configuration>
-                    <jdkName>1.5</jdkName>
-                    <jdkLevel>1.5</jdkLevel>
-                    <linkModules>true</linkModules>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>1.2.0</version>
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -231,7 +179,7 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>${pom.artifactId}</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Export-Package>${geronimo.txmanager.osgi.export}</Export-Package>
                         <Import-Package>${geronimo.txmanager.osgi.import.pkg}*</Import-Package>
                         <Private-Package>${geronimo.txmanager.osgi.private.pkg}</Private-Package>

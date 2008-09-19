@@ -29,9 +29,9 @@
     </parent>
 
     <artifactId>geronimo-transaction</artifactId>
-    <packaging>bundle</packaging>
     <name>Geronimo TxManager :: Transaction</name>
-
+    <packaging>bundle</packaging>
+    
     <properties>
         <geronimo.txmanager.osgi.export.pkg>org.apache.geronimo.transaction</geronimo.txmanager.osgi.export.pkg>
         <geronimo.txmanager.osgi.import.pkg>org.objectweb.howl*;resolution:=optional,*</geronimo.txmanager.osgi.import.pkg>
@@ -56,6 +56,12 @@
         <dependency>
             <groupId>org.objectweb.howl</groupId>
             <artifactId>howl</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
