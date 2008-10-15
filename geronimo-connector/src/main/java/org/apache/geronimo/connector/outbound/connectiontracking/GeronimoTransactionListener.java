@@ -19,15 +19,15 @@ package org.apache.geronimo.connector.outbound.connectiontracking;
 import javax.resource.ResourceException;
 import javax.transaction.Transaction;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.manager.TransactionManagerMonitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev$ $Date$
  */
 public class GeronimoTransactionListener implements TransactionManagerMonitor {
-    private static final Log log = LogFactory.getLog(GeronimoTransactionListener.class);
+    private static final Logger log = LoggerFactory.getLogger(GeronimoTransactionListener.class);
     private final TrackedConnectionAssociator trackedConnectionAssociator;
 
     public GeronimoTransactionListener(TrackedConnectionAssociator trackedConnectionAssociator) {

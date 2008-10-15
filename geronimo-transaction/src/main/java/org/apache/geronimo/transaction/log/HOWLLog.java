@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import javax.transaction.xa.Xid;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.manager.LogException;
 import org.apache.geronimo.transaction.manager.Recovery;
 import org.apache.geronimo.transaction.manager.TransactionBranchInfo;
@@ -45,6 +43,8 @@ import org.objectweb.howl.log.ReplayListener;
 import org.objectweb.howl.log.xa.XACommittingTx;
 import org.objectweb.howl.log.xa.XALogRecord;
 import org.objectweb.howl.log.xa.XALogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev$ $Date$
@@ -57,7 +57,7 @@ public class HOWLLog implements TransactionLog {
 
     static final String[] TYPE_NAMES = {null, "PREPARE", "COMMIT", "ROLLBACK"};
 
-    private static final Log log = LogFactory.getLog(HOWLLog.class);
+    private static final Logger log = LoggerFactory.getLogger(HOWLLog.class);
 
     private File serverBaseDir;
     private String logFileDir;

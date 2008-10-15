@@ -25,8 +25,9 @@ import java.util.List;
 import javax.resource.spi.ConnectionEvent;
 import javax.resource.spi.ConnectionEventListener;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * ConnectionEventListener.java
@@ -38,7 +39,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class GeronimoConnectionEventListener implements ConnectionEventListener {
 
-    private static Log log = LogFactory.getLog(GeronimoConnectionEventListener.class.getName());
+    private static Logger log = LoggerFactory.getLogger(GeronimoConnectionEventListener.class.getName());
 
     private final ManagedConnectionInfo managedConnectionInfo;
     private final ConnectionInterceptor stack;

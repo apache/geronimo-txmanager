@@ -19,13 +19,13 @@ package org.apache.geronimo.connector.outbound;
 
 import javax.transaction.TransactionManager;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PartitionedPool;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PoolingSupport;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.TransactionSupport;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GenericConnectionManager sets up a connection manager stack according to the
@@ -34,7 +34,7 @@ import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
  * @version $Rev$ $Date$
  */
 public class GenericConnectionManager extends AbstractConnectionManager {
-    protected static final Log log = LogFactory.getLog(AbstractSinglePoolConnectionInterceptor.class.getName());
+    protected static final Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
 
     //default constructor for use as endpoint
     public GenericConnectionManager() {

@@ -21,8 +21,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Based class for WorkExecutorPool. Sub-classes define the synchronization
@@ -37,7 +38,7 @@ public class WorkExecutorPoolImpl implements WorkExecutorPool {
      * A timed out pooled executor.
      */
     private ThreadPoolExecutor pooledExecutor;
-    private static Log log = LogFactory.getLog(WorkExecutorPoolImpl.class);
+    private static Logger log = LoggerFactory.getLogger(WorkExecutorPoolImpl.class);
 
     /**
      * Creates a pool with the specified minimum and maximum sizes. The Channel
