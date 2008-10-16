@@ -111,6 +111,11 @@ public abstract class AbstractConnectionManager implements ConnectionManagerCont
         getStack().getConnection(ci);
     }
 
+    public void inactiveConnectionClosed(Object connection, ManagedConnectionFactory managedConnectionFactory) {
+        //TODO If we are tracking connections, we need to stop tracking this one.
+        //I don't see why we don't get a connectionClosed event for it.
+    }
+
     ConnectionInterceptor getConnectionInterceptor() {
         return getStack();
     }

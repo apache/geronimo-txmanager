@@ -17,9 +17,17 @@
 
 package org.apache.geronimo.connector.work;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import javax.resource.NotSupportedException;
 import javax.resource.spi.work.ExecutionContext;
+import javax.resource.spi.work.InflowContext;
+import javax.resource.spi.work.InflowContextProvider;
+import javax.resource.spi.work.TransactionInflowContext;
 import javax.resource.spi.work.Work;
 import javax.resource.spi.work.WorkAdapter;
 import javax.resource.spi.work.WorkCompletedException;
@@ -28,12 +36,7 @@ import javax.resource.spi.work.WorkException;
 import javax.resource.spi.work.WorkListener;
 import javax.resource.spi.work.WorkManager;
 import javax.resource.spi.work.WorkRejectedException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.SystemException;
-import javax.transaction.xa.XAException;
 
-import org.apache.geronimo.transaction.manager.ImportedTransactionActiveException;
-import org.apache.geronimo.transaction.manager.XAWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,8 @@ import org.slf4j.LoggerFactory;
 public class WorkerContext implements Work {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerContext.class);
+
+    private static final List<InflowContext> NO_INFLOW_CONTEXT = Collections.emptyList();
 
     /**
      * Null WorkListener used as the default WorkListener.
@@ -93,16 +98,9 @@ public class WorkerContext implements Work {
     private long startTimeOut;
 
     /**
-     * Execution context of the actual work to be executed.
-     */
-    private final ExecutionContext executionContext;
-
-    private final XAWork xaWork;
-
-    /**
      * Listener to be notified during the life-cycle of the work treatment.
      */
-    private WorkListener workListener = NULL_WORK_LISTENER;
+    private final WorkListener workListener;
 
     /**
      * Work exception, if any.
@@ -120,40 +118,59 @@ public class WorkerContext implements Work {
     private CountDownLatch endLatch = new CountDownLatch(1);
 
     /**
-     * Create a WorkWrapper.
-     *
-     * @param work                      Work to be wrapped.
-     * @param xaWork
+     * Execution context of the actual work to be executed.
      */
-    public WorkerContext(Work work, XAWork xaWork) {
+    private final ExecutionContext executionContext;
+
+    private final List<InflowContextHandler> inflowContextHandlers;
+
+
+    /**
+     * Create a WorkWrapper.
+     * TODO include a InflowContextLifecycleListener
+     * @param work   Work to be wrapped.
+     * @param inflowContextHandlers InflowContextHandlers supported by this work manager
+     */
+    public WorkerContext(Work work, List<InflowContextHandler> inflowContextHandlers) {
         adaptee = work;
+        this.inflowContextHandlers = inflowContextHandlers;
         executionContext = null;
-        this.xaWork = xaWork;
+        workListener = NULL_WORK_LISTENER;
     }
 
     /**
      * Create a WorkWrapper with the specified execution context.
      *
+     * TODO include a InflowContextLifecycleListener
      * @param aWork         Work to be wrapped.
      * @param aStartTimeout a time duration (in milliseconds) within which the
-     *                      execution of the Work instance must start.
+ *                      execution of the Work instance must start.
      * @param execContext   an object containing the execution context with which
-     *                      the submitted Work instance must be executed.
+*                      the submitted Work instance must be executed.
      * @param workListener  an object which would be notified when the various
-     *                      Work processing events (work accepted, work rejected, work started,
+     * @param inflowContextHandlers InflowContextHandlers supported by this work manager
+     * @throws javax.resource.spi.work.WorkRejectedException if executionContext supplied yet Work implements InflowContextProvider
      */
     public WorkerContext(Work aWork,
                          long aStartTimeout,
                          ExecutionContext execContext,
-                         XAWork xaWork,
-                         WorkListener workListener) {
+                         WorkListener workListener, List<InflowContextHandler> inflowContextHandlers) throws WorkRejectedException {
         adaptee = aWork;
         startTimeOut = aStartTimeout;
-        executionContext = execContext;
-        this.xaWork = xaWork;
-        if (null != workListener) {
+        if (null == workListener) {
+            this.workListener = NULL_WORK_LISTENER;
+        } else {
             this.workListener = workListener;
         }
+        if (aWork instanceof InflowContextProvider) {
+            if (execContext != null) {
+                throw new WorkRejectedException("Execution context provided but Work implements InflowContextProvider");
+            }
+            executionContext = null;
+        } else {
+            executionContext = execContext;
+        }
+        this.inflowContextHandlers = inflowContextHandlers;
     }
 
     /* (non-Javadoc)
@@ -229,7 +246,7 @@ public class WorkerContext implements Work {
      * @return true if the Work has timed out and false otherwise.
      */
     public synchronized boolean isTimedOut() {
-        assert isAccepted: "The work is not accepted.";
+        assert isAccepted : "The work is not accepted.";
         // A value of 0 means that the work never times out.
         //??? really?
         if (0 == startTimeOut || startTimeOut == WorkManager.INDEFINITE) {
@@ -278,6 +295,7 @@ public class WorkerContext implements Work {
             endLatch.countDown();
             return;
         }
+
         // Implementation note: the work listener is notified prior to release
         // the start lock. This behavior is intentional and seems to be the
         // more conservative.
@@ -286,29 +304,50 @@ public class WorkerContext implements Work {
         //Implementation note: we assume this is being called without an interesting TransactionContext,
         //and ignore/replace whatever is associated with the current thread.
         try {
-            if (executionContext == null || executionContext.getXid() == null) {
-                adaptee.run();
-            } else {
+            List<InflowContext> inflowContexts = NO_INFLOW_CONTEXT;
+            if (executionContext != null) {
+                TransactionInflowContext txInflowContext = new TransactionInflowContext();
                 try {
-                    long transactionTimeout = executionContext.getTransactionTimeout();
-                    //translate -1 value to 0 to indicate default transaction timeout.
-                    xaWork.begin(executionContext.getXid(), transactionTimeout < 0 ? 0 : transactionTimeout);
-                } catch (XAException e) {
-                    throw new WorkCompletedException("Transaction import failed for xid " + executionContext.getXid(), WorkCompletedException.TX_RECREATE_FAILED).initCause(e);
-                } catch (InvalidTransactionException e) {
-                    throw new WorkCompletedException("Transaction import failed for xid " + executionContext.getXid(), WorkCompletedException.TX_RECREATE_FAILED).initCause(e);
-                } catch (SystemException e) {
-                    throw new WorkCompletedException("Transaction import failed for xid " + executionContext.getXid(), WorkCompletedException.TX_RECREATE_FAILED).initCause(e);
-                } catch (ImportedTransactionActiveException e) {
-                    throw new WorkCompletedException("Transaction already active for xid " + executionContext.getXid(), WorkCompletedException.TX_CONCURRENT_WORK_DISALLOWED).initCause(e);
+                    txInflowContext.setTransactionTimeout(executionContext.getTransactionTimeout());
+                } catch (NotSupportedException e) {
+                    throw new WorkRejectedException("Could not read tx timeout");
                 }
-                try {
-                    adaptee.run();
-                } finally {
-                    xaWork.end(executionContext.getXid());
-                }
-
+                inflowContexts = Collections.<InflowContext>singletonList(txInflowContext);
+            } else if (adaptee instanceof InflowContextProvider) {
+                inflowContexts = ((InflowContextProvider) adaptee).getInflowContexts();
             }
+            List<InflowContextHandler> sortedHandlers = new ArrayList<InflowContextHandler>(inflowContexts.size());
+            for (InflowContext inflowContext : inflowContexts) {
+                boolean found = false;
+                for (Iterator<InflowContextHandler> it = inflowContextHandlers.iterator(); it.hasNext();) {
+                    InflowContextHandler inflowContextHandler = it.next();
+                    //TODO is this the right way around?
+                    if (inflowContext.getClass().isAssignableFrom(inflowContextHandler.getHandledClass())) {
+                        it.remove();
+                        sortedHandlers.add(inflowContextHandler);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    throw new WorkCompletedException("Duplicate or unhandled InflowContext: " + inflowContext);
+                }
+            }
+            // TODO use a InflowContextLifecycleListener
+
+            int i = 0;
+            for (InflowContext inflowContext : inflowContexts) {
+                inflowContextHandlers.get(i).before(inflowContext);
+            }
+            try {
+                adaptee.run();
+            } finally {
+                int j = 0;
+                for (InflowContext inflowContext : inflowContexts) {
+                    inflowContextHandlers.get(j).after(inflowContext);
+                }
+            }
+
             workListener.workCompleted(new WorkEvent(this, WorkEvent.WORK_COMPLETED, adaptee, null));
         } catch (Throwable e) {
             workException = (WorkException) (e instanceof WorkCompletedException ? e : new WorkCompletedException("Unknown error", WorkCompletedException.UNDEFINED).initCause(e));

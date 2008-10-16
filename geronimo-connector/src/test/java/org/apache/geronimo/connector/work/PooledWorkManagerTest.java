@@ -24,6 +24,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 
 import javax.resource.spi.work.ExecutionContext;
 import javax.resource.spi.work.Work;
@@ -51,6 +52,7 @@ public class PooledWorkManagerTest extends TestCase {
         super.setUp();
         
         XAWork xaWork = new GeronimoTransactionManager();
+        TransactionInflowContextHandler txInflowContextHandler = new TransactionInflowContextHandler(xaWork);
         int poolSize = 1;
         int keepAliveTime = 30000;
         ThreadPoolExecutor pool = new ThreadPoolExecutor(
@@ -63,7 +65,7 @@ public class PooledWorkManagerTest extends TestCase {
         pool.setThreadFactory(new ThreadPoolThreadFactory("Connector Test", getClass().getClassLoader()));
 
 
-        workManager = new GeronimoWorkManager(pool, pool, pool, xaWork);
+        workManager = new GeronimoWorkManager(pool, pool, pool, Collections.<InflowContextHandler>singletonList(txInflowContextHandler));
         workManager.doStart();
     }
 
