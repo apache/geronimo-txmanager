@@ -57,6 +57,15 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
         tm.getTransaction().registerSynchronization(normalSync);
     }
 
+    public void testTransactionKey() throws Exception {
+    	normalSync = new CountingSync();
+    	assertNull(tm.getTransactionKey());
+    	setUpInterposedSync();
+    	tm.getTransaction().registerSynchronization(normalSync);
+    	assertNotNull(tm.getTransactionKey());
+    	tm.commit();
+    	assertNull(tm.getTransactionKey());
+    }
 
     public void testInterposedSynchIsCalledOnCommit() throws Exception {
         setUpInterposedSync();
