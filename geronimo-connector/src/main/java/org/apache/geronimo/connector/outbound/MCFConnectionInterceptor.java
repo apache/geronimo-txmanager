@@ -20,8 +20,9 @@ package org.apache.geronimo.connector.outbound;
 import javax.resource.ResourceException;
 import javax.resource.spi.ManagedConnection;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * MCFConnectionInterceptor.java
@@ -31,7 +32,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class MCFConnectionInterceptor implements ConnectionInterceptor {
 
-    protected static final Log log = LogFactory.getLog(MCFConnectionInterceptor.class.getName());
+    protected static final Logger log = LoggerFactory.getLogger(MCFConnectionInterceptor.class.getName());
 
     private ConnectionInterceptor stack;
 
@@ -43,11 +44,11 @@ public class MCFConnectionInterceptor implements ConnectionInterceptor {
         if (mci.getManagedConnection() != null) {
             return;
         }
-        
+
         try {
             ManagedConnection mc = mci.getManagedConnectionFactory().createManagedConnection(
-                        mci.getSubject(),
-                        mci.getConnectionRequestInfo());
+                    mci.getSubject(),
+                    mci.getConnectionRequestInfo());
             mci.setManagedConnection(mc);
             GeronimoConnectionEventListener listener = new GeronimoConnectionEventListener(stack, mci);
             mci.setConnectionEventListener(listener);
@@ -77,7 +78,7 @@ public class MCFConnectionInterceptor implements ConnectionInterceptor {
     public void destroy() {
         // MCF is the "tail" of the stack. So, we're all done...
     }
-    
+
     public void setStack(ConnectionInterceptor stack) {
         this.stack = stack;
     }

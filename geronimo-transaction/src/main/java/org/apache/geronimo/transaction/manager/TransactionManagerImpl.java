@@ -30,9 +30,9 @@ import javax.transaction.xa.Xid;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.log.UnrecoverableLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple implementation of a transaction manager.
@@ -40,7 +40,7 @@ import org.apache.geronimo.transaction.log.UnrecoverableLog;
  * @version $Rev$ $Date$
  */
 public class TransactionManagerImpl implements TransactionManager, UserTransaction, TransactionSynchronizationRegistry, XidImporter, MonitorableTransactionManager, RecoverableTransactionManager {
-    private static final Log log = LogFactory.getLog(TransactionManagerImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(TransactionManagerImpl.class);
     protected static final int DEFAULT_TIMEOUT = 600;
     protected static final byte[] DEFAULT_TM_ID = new byte[] {71,84,77,73,68};
 
@@ -50,7 +50,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     private final ThreadLocal transactionTimeoutMilliseconds = new ThreadLocal();
     private final ThreadLocal threadTx = new ThreadLocal();
     private final ConcurrentHashMap associatedTransactions = new ConcurrentHashMap();
-    private static final Log recoveryLog = LogFactory.getLog("RecoveryController");
+    private static final Logger recoveryLog = LoggerFactory.getLogger("RecoveryController");
     final Recovery recovery;
     private final CopyOnWriteArrayList transactionAssociationListeners = new CopyOnWriteArrayList();
     private List recoveryErrors = new ArrayList();
@@ -334,7 +334,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     //Recovery
     public void recoveryError(Exception e) {
-        recoveryLog.error(e);
+        recoveryLog.error("Recovery error", e);
         recoveryErrors.add(e);
     }
 

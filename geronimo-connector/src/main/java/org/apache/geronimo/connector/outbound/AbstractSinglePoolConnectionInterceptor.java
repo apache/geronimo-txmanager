@@ -17,9 +17,9 @@
 package org.apache.geronimo.connector.outbound;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -27,18 +27,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ConnectionRequestInfo;
-import javax.resource.spi.ManagedConnectionFactory;
 import javax.resource.spi.ManagedConnection;
+import javax.resource.spi.ManagedConnectionFactory;
 import javax.security.auth.Subject;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev$ $Date$
  */
 public abstract class AbstractSinglePoolConnectionInterceptor implements ConnectionInterceptor, PoolingAttributes {
-    protected static Log log = LogFactory.getLog(AbstractSinglePoolConnectionInterceptor.class.getName());
+    protected static Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
     protected final ConnectionInterceptor next;
     private final ReadWriteLock resizeLock = new ReentrantReadWriteLock();
     protected Semaphore permits;

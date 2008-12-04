@@ -33,8 +33,9 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  *
@@ -43,7 +44,7 @@ import org.apache.commons.logging.LogFactory;
  *
  * */
 public class RecoveryImpl implements Recovery {
-    private static final Log log = LogFactory.getLog("Recovery");
+    private static final Logger log = LoggerFactory.getLogger("Recovery");
 
     private final TransactionLog txLog;
     private final XidFactory xidFactory;
@@ -108,7 +109,7 @@ public class RecoveryImpl implements Recovery {
                         xaResource.commit(xid, false);
                     } catch(XAException e) {
                         recoveryErrors.add(e);
-                        log.error(e);
+                        log.error("Recovery error", e);
                     }
                     removeNameFromTransaction(xidNamesPair, name, true);
                 }
@@ -118,7 +119,7 @@ public class RecoveryImpl implements Recovery {
                     xaResource.rollback(xid);
                 } catch (XAException e) {
                     recoveryErrors.add(e);
-                    log.error(e);
+                    log.error("Could not roll back", e);
                 }
             } else if (xidFactory.matchesBranchId(xid.getBranchQualifier())) {
                 //our branch, but we did not start this tx.
@@ -129,7 +130,7 @@ public class RecoveryImpl implements Recovery {
                         xaResource.rollback(xid);
                     } catch (XAException e) {
                         recoveryErrors.add(e);
-                        log.error(e);
+                        log.error("Could not roll back", e);
                     }
                 } else {
                     //we prepared this branch, must wait for commit/rollback command.
@@ -175,7 +176,7 @@ public class RecoveryImpl implements Recovery {
                 txLog.commit(xidBranchesPair.getXid(), xidBranchesPair.getMark());
             } catch (LogException e) {
                 recoveryErrors.add(e);
-                log.error(e);
+                log.error("Could not commit", e);
             }
         }
     }

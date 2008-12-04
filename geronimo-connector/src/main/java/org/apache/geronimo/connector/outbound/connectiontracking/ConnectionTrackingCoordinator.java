@@ -32,12 +32,12 @@ import java.util.concurrent.ConcurrentMap;
 import javax.resource.ResourceException;
 import javax.resource.spi.DissociatableManagedConnection;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.connector.outbound.ConnectionInfo;
 import org.apache.geronimo.connector.outbound.ConnectionReturnAction;
 import org.apache.geronimo.connector.outbound.ConnectionTrackingInterceptor;
 import org.apache.geronimo.connector.outbound.ManagedConnectionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ConnectionTrackingCoordinator tracks connections that are in use by
@@ -56,7 +56,7 @@ import org.apache.geronimo.connector.outbound.ManagedConnectionInfo;
  * @version $Rev$ $Date$
  */
 public class ConnectionTrackingCoordinator implements TrackedConnectionAssociator, ConnectionTracker {
-    private static final Log log = LogFactory.getLog(ConnectionTrackingCoordinator.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(ConnectionTrackingCoordinator.class.getName());
 
     private final boolean lazyConnect;
     private final ThreadLocal<ConnectorInstanceContext> currentInstanceContexts = new ThreadLocal<ConnectorInstanceContext>();

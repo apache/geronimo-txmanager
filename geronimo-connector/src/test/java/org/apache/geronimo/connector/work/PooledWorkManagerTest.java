@@ -32,10 +32,10 @@ import javax.resource.spi.work.WorkException;
 import javax.resource.spi.work.WorkListener;
 
 import junit.framework.TestCase;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.manager.GeronimoTransactionManager;
 import org.apache.geronimo.transaction.manager.XAWork;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Timing is crucial for this test case, which focuses on the synchronization
@@ -251,7 +251,7 @@ public class PooledWorkManagerTest extends TestCase {
     }
 
     public static class DummyWork implements Work {
-        private Log log = LogFactory.getLog(getClass());
+        private Logger log = LoggerFactory.getLogger(getClass());
 
         private final String name;
         private final int tempo;
@@ -278,7 +278,7 @@ public class PooledWorkManagerTest extends TestCase {
     }
 
     public static class DummyWorkListener implements WorkListener {
-        private Log log = LogFactory.getLog(getClass());
+        private Logger log = LoggerFactory.getLogger(getClass());
 
         public WorkEvent acceptedEvent;
         public WorkEvent rejectedEvent;

@@ -24,8 +24,9 @@ import java.util.List;
 import javax.resource.ResourceException;
 import javax.resource.spi.ManagedConnection;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * SinglePoolConnectionInterceptor chooses a single connection from the pool.  If selectOneAssumeMatch
@@ -39,7 +40,7 @@ import org.apache.commons.logging.LogFactory;
  * @version $Rev$ $Date$
  */
 public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectionInterceptor {
-    private static final Log log = LogFactory.getLog(SinglePoolConnectionInterceptor.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(SinglePoolConnectionInterceptor.class.getName());
 
     private boolean selectOneAssumeMatch;
 

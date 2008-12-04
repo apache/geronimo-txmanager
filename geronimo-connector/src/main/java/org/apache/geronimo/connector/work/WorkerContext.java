@@ -32,10 +32,10 @@ import javax.transaction.InvalidTransactionException;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.transaction.manager.ImportedTransactionActiveException;
 import org.apache.geronimo.transaction.manager.XAWork;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Work wrapper providing an execution context to a Work instance.
@@ -44,7 +44,7 @@ import org.apache.geronimo.transaction.manager.XAWork;
  */
 public class WorkerContext implements Work {
 
-    private static final Log log = LogFactory.getLog(WorkerContext.class);
+    private static final Logger log = LoggerFactory.getLogger(WorkerContext.class);
 
     /**
      * Null WorkListener used as the default WorkListener.

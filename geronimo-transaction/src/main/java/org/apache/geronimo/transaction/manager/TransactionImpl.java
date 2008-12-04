@@ -40,8 +40,9 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Basic local transaction with support for multiple resources.
@@ -49,7 +50,7 @@ import org.apache.commons.logging.LogFactory;
  * @version $Rev$ $Date$
  */
 public class TransactionImpl implements Transaction {
-    private static final Log log = LogFactory.getLog("Transaction");
+    private static final Logger log = LoggerFactory.getLogger("Transaction");
 
     private final XidFactory xidFactory;
     private final Xid xid;

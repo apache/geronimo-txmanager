@@ -34,6 +34,10 @@
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
     
+    <description>
+        Geronimo Transaction Manager
+    </description>
+    
     <scm>
         <connection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1/</connection>
         <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1/</developerConnection>
@@ -55,9 +59,16 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>commons-logging</groupId>
-                <artifactId>commons-logging</artifactId>
-                <version>1.0.4</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.5.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.5.0</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -76,6 +87,13 @@
                 <groupId>org.objectweb.howl</groupId>
                 <artifactId>howl</artifactId>
                 <version>1.0.1-1</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>3.8.2</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
