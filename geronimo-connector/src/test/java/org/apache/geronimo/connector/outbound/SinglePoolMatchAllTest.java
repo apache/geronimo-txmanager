@@ -20,11 +20,15 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.security.auth.Subject;
-
 /**
  * @version $Rev$ $Date$
  */
-public interface SubjectSource {
-    Subject getSubject() throws SecurityException;
+public class SinglePoolMatchAllTest extends AbstractSinglePoolTest{
+
+    protected void setUp() throws Exception {
+        super.setUp();
+//        interceptor = new SinglePoolConnectionInterceptor(switchableInterceptor, maxSize, 0, 100, 1, true);
+        this.interceptor = new SinglePoolMatchAllConnectionInterceptor(switchableInterceptor, maxSize, 0, 100, 1);
+    }
+
 }
