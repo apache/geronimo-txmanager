@@ -19,6 +19,7 @@ package org.apache.geronimo.transaction.manager;
 
 import java.util.Map;
 
+import javax.transaction.InvalidTransactionException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Transaction;
@@ -290,28 +291,125 @@ public class TransactionManagerImplTest extends TestCase {
         assertEquals(xid, recovered.keySet().iterator().next());
     }
 
-      public void testTimeout() throws Exception
-      {
-          long timeout = tm.getTransactionTimeoutMilliseconds(0L);
-          tm.setTransactionTimeout((int)timeout/4000);
-          tm.begin();
-          System.out.println("Test to sleep for " + timeout + " millisecs");
-          Thread.sleep(timeout);
-          try
-          {
-              tm.commit();
-              fail("Tx Should get Rollback exception");
-          }catch(RollbackException rex)
-          {
-              // Caught expected exception
-          }
+    public void testTimeout() throws Exception
+    {
+        long timeout = tm.getTransactionTimeoutMilliseconds(0L);
+        tm.setTransactionTimeout((int)timeout/4000);
+        tm.begin();
+        System.out.println("Test to sleep for " + timeout + " millisecs");
+        Thread.sleep(timeout);
+        try
+        {
+            tm.commit();
+            fail("Tx Should get Rollback exception");
+        }catch(RollbackException rex)
+        {
+            // Caught expected exception
+        }
 
-          // Now test if the default timeout is active
-          tm.begin();
-          System.out.println("Test to sleep for " + (timeout/2) + " millisecs");
-          Thread.sleep((timeout/2));
-          tm.commit();
-          // Its a failure if exception occurs.
-      }
+        // Now test if the default timeout is active
+        tm.begin();
+        System.out.println("Test to sleep for " + (timeout/2) + " millisecs");
+        Thread.sleep((timeout/2));
+        tm.commit();
+        // Its a failure if exception occurs.
+    }    
+      
+    // resume throws InvalidTransactionException on completed tx (via commit)
+    public void testResume1() throws Exception {
+        Transaction tx;
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        tm.begin();   
+        assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
+        tx = tm.getTransaction();
+        assertNotNull(tx);
+        assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
+        
+        tm.commit();
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        assertNull(tm.getTransaction());
+        
+        try {
+            tm.resume(tx);
+            fail();
+        } catch (InvalidTransactionException e) {
+            // expected
+        }        
+    }
+    
+    // resume throws InvalidTransactionException on completed tx (via rollback)
+    public void testResume2() throws Exception {
+        Transaction tx;
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        tm.begin();
+        assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
+        tx = tm.getTransaction();
+        assertNotNull(tx);
+        assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
 
+        tx = tm.suspend();
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        assertNull(tm.getTransaction());
+
+        tm.resume(tx);
+        assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
+        assertEquals(tx, tm.getTransaction());
+
+        tm.rollback();
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        assertNull(tm.getTransaction());     
+        
+        try {
+            tm.resume(tx);
+            fail();
+        } catch (InvalidTransactionException e) {
+            // expected
+        }   
+    }
+    
+    // resume works on null tx
+    public void testResume3() throws Exception {
+        Transaction tx;
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        tm.begin();
+        assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
+        tx = tm.getTransaction();
+        assertNotNull(tx);
+        assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
+
+        tm.commit();
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        assertNull(tm.getTransaction());
+
+        // tx should be null
+        tx = tm.suspend();
+        assertNull(tx);
+        
+        try {
+            tm.resume(tx);
+        } catch (InvalidTransactionException e) {
+            // null is considered valid so we don't expect InvalidTransactionException here
+            e.printStackTrace();
+            fail();
+        }   
+    }
+    
+    // resume works on any valid tx
+    public void testResume4() throws Exception {
+        Transaction tx;
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        tm.begin();
+        assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
+        tx = tm.getTransaction();
+        assertNotNull(tx);
+        assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
+
+        tm.resume(tx);
+        assertNotNull(tx);
+        assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
+
+        tm.commit();
+        assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
+        assertNull(tm.getTransaction()); 
+    }
 }
