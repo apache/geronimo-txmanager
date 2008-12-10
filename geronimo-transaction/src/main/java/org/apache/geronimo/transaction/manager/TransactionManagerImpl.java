@@ -107,16 +107,18 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     private void associate(TransactionImpl tx) throws InvalidTransactionException {
-        if (tx == null) throw new NullPointerException("tx is null");
-
-        Object existingAssociation = associatedTransactions.putIfAbsent(tx, Thread.currentThread());
-        if (existingAssociation != null) {
-            throw new InvalidTransactionException("Specified transaction is already associated with another thread");
+        if (tx.getStatus() == Status.STATUS_NO_TRANSACTION) {
+            throw new InvalidTransactionException("Cannot resume invalid transaction: " + tx);
+        } else {
+            Object existingAssociation = associatedTransactions.putIfAbsent(tx, Thread.currentThread());
+            if (existingAssociation != null) {
+                throw new InvalidTransactionException("Specified transaction is already associated with another thread");
+            }
+            threadTx.set(tx);
+            fireThreadAssociated(tx);
+            activeCount.getAndIncrement();
         }
-        threadTx.set(tx);
-        fireThreadAssociated(tx);
-        activeCount.getAndIncrement();
-    }
+    } 
 
     private void unassociate() {
         Transaction tx = getTransaction();
@@ -177,10 +179,13 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getTransaction() != null) {
             throw new IllegalStateException("Thread already associated with another transaction");
         }
-        if (!(tx instanceof TransactionImpl)) {
-            throw new InvalidTransactionException("Cannot resume foreign transaction: " + tx);
+        if (tx != null) {
+            if (!(tx instanceof TransactionImpl)) {
+                throw new InvalidTransactionException("Cannot resume foreign transaction: " + tx);
+            }
+            
+            associate((TransactionImpl) tx);
         }
-        associate((TransactionImpl) tx);
     }
 
     public Object getResource(Object key) {
