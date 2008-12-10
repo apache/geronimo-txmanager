@@ -176,10 +176,10 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     public void resume(Transaction tx) throws IllegalStateException, InvalidTransactionException, SystemException {
-        if (getTransaction() != null) {
+        if (getTransaction() != null && tx != getTransaction()) {
             throw new IllegalStateException("Thread already associated with another transaction");
         }
-        if (tx != null) {
+        if (tx != null && tx != getTransaction()) {
             if (!(tx instanceof TransactionImpl)) {
                 throw new InvalidTransactionException("Cannot resume foreign transaction: " + tx);
             }
