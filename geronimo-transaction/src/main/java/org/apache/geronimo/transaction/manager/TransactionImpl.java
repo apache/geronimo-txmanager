@@ -470,7 +470,6 @@ public class TransactionImpl implements Transaction {
             rms = resourceManagers;
         }
 
-        beforeCompletion();
         endResources();
         try {
             rollbackResources(rms);
