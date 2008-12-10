@@ -78,20 +78,25 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
         assertTrue("interposedSync afterCompletion was not called", interposedSync.getAfterCount() != -1);
     }
 
+    private void checkInterposedSyncCalledOnRollback() {
+        assertTrue("interposedSync afterCompletion was not called", interposedSync.getAfterCount() != -1);
+    }
+    
     public void testInterposedSynchIsCalledOnRollback() throws Exception {
         setUpInterposedSync();
         tm.rollback();
-        checkInterposedSyncCalled();
+        checkInterposedSyncCalledOnRollback();
     }
     
-    /*public void testNormalSynchIsNotCalledOnRollback() throws Exception {
+    // check normal synch before completion is not called on rollback
+    public void testNormalSynchBeforeCompletion() throws Exception {
     	normalSync = new CountingSync();
     	tm.begin();
     	tm.getTransaction().registerSynchronization(normalSync);
         tm.rollback();
         assertFalse(normalSync.beforeCompletionCalled());
         assertTrue(normalSync.afterCompletionCalled());
-    }*/
+    }
 
     public void testInterposedSynchIsCalledOnMarkRollback() throws Exception {
         setUpInterposedSync();
@@ -126,11 +131,16 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
         assertTrue("interposedSync beforeCompletion was not called after normalSync beforeCompletion", interposedSync.getBeforeCount() > normalSync.getBeforeCount());
         assertTrue("interposedSync afterCompletion was not called before normalSync beforeCompletion", interposedSync.getAfterCount() < normalSync.getAfterCount());
     }
+    
+    private void checkSyncCallOrderOnRollback() {
+        checkInterposedSyncCalledOnRollback();
+        assertTrue("interposedSync afterCompletion was not called before normalSync beforeCompletion", interposedSync.getAfterCount() < normalSync.getAfterCount());
+    }
 
     public void testSynchCallOrderOnRollback() throws Exception {
         setUpSyncs();
         tm.rollback();
-        checkSyncCallOrder();
+        checkSyncCallOrderOnRollback();
     }
 
     public void testSynchCallOrderOnMarkRollback() throws Exception {
@@ -163,12 +173,12 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
         private boolean afterCalled = false;
 
         public void beforeCompletion() {
-        	beforeCalled = true;
+            beforeCalled = true;
             beforeCount = beforeCounter++;
         }
 
         public void afterCompletion(int i) {
-        	afterCalled = true;
+            afterCalled = true;
             afterCount = afterCounter++;
         }
 

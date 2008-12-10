@@ -18,7 +18,6 @@
 package org.apache.geronimo.transaction.manager;
 
 import javax.transaction.Status;
-import javax.transaction.InvalidTransactionException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
