@@ -83,6 +83,15 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
         tm.rollback();
         checkInterposedSyncCalled();
     }
+    
+    /*public void testNormalSynchIsNotCalledOnRollback() throws Exception {
+    	normalSync = new CountingSync();
+    	tm.begin();
+    	tm.getTransaction().registerSynchronization(normalSync);
+        tm.rollback();
+        assertFalse(normalSync.beforeCompletionCalled());
+        assertTrue(normalSync.afterCompletionCalled());
+    }*/
 
     public void testInterposedSynchIsCalledOnMarkRollback() throws Exception {
         setUpInterposedSync();
@@ -150,12 +159,16 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
 
         private int beforeCount = -1;
         private int afterCount = -1;
+        private boolean beforeCalled = false;
+        private boolean afterCalled = false;
 
         public void beforeCompletion() {
+        	beforeCalled = true;
             beforeCount = beforeCounter++;
         }
 
         public void afterCompletion(int i) {
+        	afterCalled = true;
             afterCount = afterCounter++;
         }
 
@@ -165,6 +178,14 @@ public class TransactionSynchronizationRegistryTest extends TestCase {
 
         public int getAfterCount() {
             return afterCount;
+        }
+        
+        public boolean beforeCompletionCalled() {
+        	return beforeCalled;
+        }
+        
+        public boolean afterCompletionCalled() {
+        	return afterCalled;
         }
     }
 
