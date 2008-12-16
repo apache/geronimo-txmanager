@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Collection;
 
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -247,7 +249,7 @@ public class RecoveryImpl implements Recovery {
             resourceNames.remove(name);
         }
 
-        public void preparedCommit() throws SystemException {
+        public void preparedCommit() throws HeuristicRollbackException, HeuristicMixedException, SystemException {
             if (!resourceNames.isEmpty()) {
                 throw new SystemException("This tx does not have all resource managers online, commit not allowed yet");
             }
