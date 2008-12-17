@@ -294,6 +294,10 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         } else {
             try {
                 ((TransactionImpl) tx).preparedCommit();
+            } catch (HeuristicMixedException e) {
+                throw (XAException) new XAException().initCause(e);
+            } catch (HeuristicRollbackException e) {
+                throw (XAException) new XAException().initCause(e);
             } catch (SystemException e) {
                 throw (XAException) new XAException().initCause(e);
             }
