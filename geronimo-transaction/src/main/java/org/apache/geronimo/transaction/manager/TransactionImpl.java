@@ -265,7 +265,7 @@ public class TransactionImpl implements Transaction {
             }
 
             if (status == Status.STATUS_MARKED_ROLLBACK) {
-                rollbackResources(resourceManagers);
+                rollbackResourcesDuringCommit(resourceManagers, false);
                 if (timedout) {
                     throw new RollbackException("Transaction timeout");
                 } else {
@@ -333,8 +333,9 @@ public class TransactionImpl implements Transaction {
             if (willCommit) {
                 commitResources(resourceManagers);
             } else {
-                rollbackResources(resourceManagers);
-                throw new RollbackException("Unable to commit");
+                // set everRollback to true here because the rollback here is caused by 
+                // XAException during the above internalPrepare
+                rollbackResourcesDuringCommit(resourceManagers, true);
             }
         } catch (XAException e) {
            throw (SystemException) new SystemException("Error during commit").initCause(e);
@@ -438,8 +439,13 @@ public class TransactionImpl implements Transaction {
             } catch (XAException e) {
                 synchronized (this) {
                     status = Status.STATUS_MARKED_ROLLBACK;
-                    //TODO document why this is true from the spec.
-                    //XAException during prepare means we can assume resource is rolled back.
+                    /* Per JTA spec,  If the resource manager wants to roll back the transaction, 
+                    it should do so by throwing an appropriate XAException in the prepare method.
+                    Also per OTS spec:
+                    The resource can return VoteRollback under any circumstances, including not having 
+                    any knowledge about the transaction (which might happen after a crash). If this 
+                    response is returned, the transaction must be rolled back. Furthermore, the Transaction 
+                    Service is not required to perform any additional operations on this resource.*/
                     rms.remove();
                     break;
                 }
@@ -609,6 +615,60 @@ public class TransactionImpl implements Transaction {
             throw cause;
         }
     }
+
+    private void rollbackResourcesDuringCommit(List rms, boolean everRb) throws HeuristicMixedException, RollbackException, SystemException {
+        XAException cause = null;
+        boolean everRolledback = everRb;
+        synchronized (this) {
+            status = Status.STATUS_ROLLING_BACK;
+        }
+        try {
+            for (Iterator i = rms.iterator(); i.hasNext();) {
+                TransactionBranch manager = (TransactionBranch) i.next();
+                try {
+                    manager.getCommitter().rollback(manager.getBranchId());
+                    everRolledback = true;
+                } catch (XAException e) {
+                    if (e.errorCode == XAException.XA_HEURRB) {
+                        // let's not set the cause here
+                        log.error("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
+                        everRolledback = true;
+                        manager.getCommitter().forget(manager.getBranchId());
+                    } else if (e.errorCode == XAException.XA_HEURMIX) {
+                        log.error("Transaction has been heuristically committed and rolled back " + manager.getCommitter() + "; continuing with rollback", e);
+                        cause = e;
+                        everRolledback = true;
+                        manager.getCommitter().forget(manager.getBranchId());
+                    } else if (e.errorCode == XAException.XA_HEURCOM) {
+                        log.error("Transaction has been heuristically committed " + manager.getCommitter() + "; continuing with rollback", e);
+                        cause = e;
+                        manager.getCommitter().forget(manager.getBranchId());
+                    } else if (cause == null) {
+                        cause = e;
+                    }
+                }
+            }
+        } catch (XAException e) {
+            throw (SystemException) new SystemException("Error during rolling back").initCause(e);            
+        }
+        
+        synchronized (this) {
+            status = Status.STATUS_ROLLEDBACK;
+        }
+        
+        if (cause == null) {
+            throw (RollbackException) new RollbackException("Error during two phase commit").initCause(cause);
+        } else {
+            if (cause.errorCode == XAException.XA_HEURCOM && everRolledback) {
+                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+            } else if (cause.errorCode == XAException.XA_HEURMIX) {
+                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+            } else {            
+                throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
+            } 
+        }
+    }
+    
     
     private void commitResources(List rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
         XAException cause = null;
