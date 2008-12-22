@@ -262,12 +262,12 @@ public class TransactionImpl implements Transaction {
             if (TransactionTimer.getCurrentTime() > timeout) {
                 status = Status.STATUS_MARKED_ROLLBACK;
                 timedout = true;
-            }
+            } 
 
             if (status == Status.STATUS_MARKED_ROLLBACK) {
                 rollbackResourcesDuringCommit(resourceManagers, false);
                 if (timedout) {
-                    throw new RollbackException("Transaction timeout");
+                    throw new RollbackException("Unable to commit: Transaction timeout");
                 } else {
                     throw new RollbackException("Unable to commit: transaction marked for rollback");
                 }
@@ -596,17 +596,25 @@ public class TransactionImpl implements Transaction {
         synchronized (this) {
             status = Status.STATUS_ROLLING_BACK;
         }
-        for (Iterator i = rms.iterator(); i.hasNext();) {
-            TransactionBranch manager = (TransactionBranch) i.next();
-            try {
-                manager.getCommitter().rollback(manager.getBranchId());
-            } catch (XAException e) {
-                log.error("Unexpected exception rolling back " + manager.getCommitter() + "; continuing with rollback", e);
-                if (cause == null) {
-                    cause = new SystemException(e.errorCode);
+        try {
+            for (Iterator i = rms.iterator(); i.hasNext();) {
+                TransactionBranch manager = (TransactionBranch) i.next();
+                try {
+                    manager.getCommitter().rollback(manager.getBranchId());
+                } catch (XAException e) {
+                    log.error("Unexpected exception rolling back " + manager.getCommitter() + "; continuing with rollback", e);
+                    if (e.errorCode == XAException.XA_HEURRB) {
+                        // let's not set the cause here
+                        log.info("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
+                        manager.getCommitter().forget(manager.getBranchId());
+                    } else if (cause == null) {
+                        cause = new SystemException(e.errorCode);
+                    }
                 }
             }
-        }
+        } catch (XAException e) {
+            throw (SystemException) new SystemException("Error during rolling back").initCause(e);            
+        }            
 
         synchronized (this) {
             status = Status.STATUS_ROLLEDBACK;
@@ -630,7 +638,7 @@ public class TransactionImpl implements Transaction {
                     everRolledback = true;
                 } catch (XAException e) {
                     if (e.errorCode == XAException.XA_HEURRB) {
-                        // let's not set the cause here
+                        // let's not set the cause here as the resulting behavior is same as requested behavior
                         log.error("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
                         everRolledback = true;
                         manager.getCommitter().forget(manager.getBranchId());
@@ -649,7 +657,7 @@ public class TransactionImpl implements Transaction {
                 }
             }
         } catch (XAException e) {
-            throw (SystemException) new SystemException("Error during rolling back").initCause(e);            
+            throw (SystemException) new SystemException("System error during commit/rolling back").initCause(e);            
         }
         
         synchronized (this) {
@@ -657,14 +665,14 @@ public class TransactionImpl implements Transaction {
         }
         
         if (cause == null) {
-            throw (RollbackException) new RollbackException("Error during two phase commit").initCause(cause);
+            throw (RollbackException) new RollbackException("Unable to commit: transaction marked for rollback").initCause(cause);
         } else {
             if (cause.errorCode == XAException.XA_HEURCOM && everRolledback) {
-                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+                throw (HeuristicMixedException) new HeuristicMixedException("HeuristicMixed error during commit/rolling back").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
-                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+                throw (HeuristicMixedException) new HeuristicMixedException("HeuristicMixed error during commit/rolling back").initCause(cause);
             } else {            
-                throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
+                throw (SystemException) new SystemException("System Error during commit/rolling back").initCause(cause);
             } 
         }
     }
