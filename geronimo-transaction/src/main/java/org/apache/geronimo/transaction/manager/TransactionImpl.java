@@ -302,8 +302,9 @@ public class TransactionImpl implements Transaction {
             if (resourceManagers.size() == 1) {
                 TransactionBranch manager = (TransactionBranch) resourceManagers.getFirst();
                 commitResource(manager);
-            }
-
+                return;
+            } 
+            
             boolean willCommit = false;
             try {
                 // two-phase
@@ -313,7 +314,6 @@ public class TransactionImpl implements Transaction {
                 throw e;
             }
             
-
             // notify the RMs
             if (willCommit) {
                 commitResources(resourceManagers);
@@ -404,7 +404,6 @@ public class TransactionImpl implements Transaction {
 
     //helper method used by Transaction.commit and XATerminator prepare.
     private boolean internalPrepare() throws SystemException {
-
         for (Iterator rms = resourceManagers.iterator(); rms.hasNext();) {
             synchronized (this) {
                 if (status != Status.STATUS_PREPARING) {
