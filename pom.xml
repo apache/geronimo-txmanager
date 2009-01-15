@@ -39,12 +39,22 @@
     </description>
     
     <scm>
-        <connection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1/</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1/</developerConnection>
-        <url>https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1/</url>
+        <connection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1</developerConnection>
+        <url>https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.1</url>
     </scm>
     
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
+    <distributionManagement>
+        <site>
+            <id>geronimo-website</id>
+            <url>${staging.siteURL}/${siteId}/${version}</url>
+        </site>
+    </distributionManagement>
+    
     <properties>
+        <siteId>txmanager</siteId>
+        <projectName>Apache Geronimo txmanager</projectName>
         <!--
         NOTE: Project version, to be used instead of ${pom.version} since that
               value magically changes when using SNAPSHOT versions.
