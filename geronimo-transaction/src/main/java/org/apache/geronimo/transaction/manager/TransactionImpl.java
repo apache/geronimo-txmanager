@@ -475,10 +475,10 @@ public class TransactionImpl implements Transaction {
                 default:
                     throw new IllegalStateException("Status is " + getStateString(status));
             }
-            rms = resourceManagers;
         }
 
         endResources();
+        rms = resourceManagers;
         try {
             rollbackResources(rms);
             //only write rollback record if we have already written prepare record.
@@ -573,6 +573,11 @@ public class TransactionImpl implements Transaction {
                 log.warn("Error ending association for XAResource " + xaRes + "; transaction will roll back. XA error code: " + e.errorCode, e);
                 synchronized (this) {
                     status = Status.STATUS_MARKED_ROLLBACK;
+                    // when XAException is XA_RBROLLBACK, which indicates that XAResource has already rolled back the transaction, no need
+                    // to send rollback request to the XAResource, thus remove it off resourceManagers list.
+                    if (e.errorCode == XAException.XA_RBROLLBACK) {
+                        resourceManagers.remove(manager);
+                    }
                 }
             }
         }
