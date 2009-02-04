@@ -17,6 +17,7 @@
 
 package org.apache.geronimo.transaction.manager;
 
+import java.util.Random;
 import javax.transaction.xa.Xid;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -26,6 +27,7 @@ import java.net.UnknownHostException;
  * The Xid is constructed of three parts:
  * <ol><li>8 byte count (LSB first)</li>
  * <li>4 byte system id</li>
+ * <li>2 byte entropy</li>
  * <li>4 or 16 byte IP address of host</li>
  * <ol>
  * @version $Rev$ $Date$
@@ -51,7 +53,13 @@ public class XidFactoryImpl implements XidFactory {
         baseId[9] = (byte) (uid >>> 8);
         baseId[10] = (byte) (uid >>> 16);
         baseId[11] = (byte) (uid >>> 24);
-        System.arraycopy(hostid, 0, baseId, 12, hostid.length);
+
+        byte[] entropy = new byte[2];
+        new Random().nextBytes(entropy);
+        baseId[12] = entropy[0];
+        baseId[13] = entropy[1];
+
+        System.arraycopy(hostid, 0, baseId, 14, hostid.length);
     }
 
     public Xid createXid() {
