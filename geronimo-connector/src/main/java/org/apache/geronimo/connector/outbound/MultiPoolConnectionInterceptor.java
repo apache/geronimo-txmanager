@@ -181,18 +181,24 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
                     ^ (cri == null ? 1 : cri.hashCode());
         }
 
+        @Override
         public int hashCode() {
             return hashcode;
         }
 
-        public boolean equals(Object other) {
-            if (!(other instanceof SubjectCRIKey)) {
-                return false;
-            }
-            SubjectCRIKey o = (SubjectCRIKey) other;
-            return hashcode == o.hashcode &&
-                    (subject == null ? o.subject == null : subject.equals(o.subject) && 
-                    cri == null ? o.cri == null : cri.equals(o.cri));
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SubjectCRIKey that = (SubjectCRIKey) o;
+
+            if (hashcode != that.hashcode) return false;
+            if (cri != null ? !cri.equals(that.cri) : that.cri != null) return false;
+            if (subject != null ? !subject.equals(that.subject) : that.subject != null) return false;
+
+            return true;
         }
+
     }
 }
