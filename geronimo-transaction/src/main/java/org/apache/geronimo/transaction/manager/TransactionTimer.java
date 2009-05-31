@@ -17,6 +17,9 @@
 
 package org.apache.geronimo.transaction.manager;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
 /**
  * TODO improve shutdown
  *
@@ -44,9 +47,14 @@ public class TransactionTimer {
     }
 
     static {
-        CurrentTime tm = new CurrentTime();
-        tm.setDaemon(true);
-        tm.start();
+	AccessController.doPrivileged(new PrivilegedAction() {
+	    public Object run() {
+		CurrentTime tm = new CurrentTime();
+		tm.setDaemon(true);
+		tm.start();
+		return null;
+	    }
+	});
     }
 
     public static long getCurrentTime() {
