@@ -30,7 +30,7 @@ import org.apache.geronimo.transaction.manager.XAWork;
 import org.apache.geronimo.transaction.manager.ImportedTransactionActiveException;
 
 /**
- * @version $Rev:$ $Date:$
+ * @version $Rev$ $Date$
  */
 public class TransactionInflowContextHandler implements InflowContextHandler<TransactionInflowContext>{
 
@@ -72,5 +72,9 @@ public class TransactionInflowContextHandler implements InflowContextHandler<Tra
 
     public Class<TransactionInflowContext> getHandledClass() {
         return TransactionInflowContext.class;
+    }
+
+    public boolean required() {
+        return false;
     }
 }

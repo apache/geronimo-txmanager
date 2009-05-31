@@ -17,9 +17,9 @@
 
 package org.apache.geronimo.connector.work;
 
-import java.util.concurrent.Executor;
-import java.util.List;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.Executor;
 
 import javax.resource.spi.work.ExecutionContext;
 import javax.resource.spi.work.Work;
@@ -37,7 +37,7 @@ import org.apache.geronimo.connector.work.pool.WorkExecutor;
  * WorkManager implementation which uses under the cover three WorkExecutorPool
  * - one for each synchronization policy - in order to dispatch the submitted
  * Work instances.
- * <P>
+ * <p/>
  * A WorkManager is a component of the JCA specifications, which allows a
  * Resource Adapter to submit tasks to an Application Server for execution.
  *
@@ -65,7 +65,7 @@ public class GeronimoWorkManager implements WorkManager {
      */
     private Executor scheduledWorkExecutorPool;
 
-    private final List<InflowContextHandler> inflowContextHandlers;
+    private final Collection<InflowContextHandler> inflowContextHandlers;
 
 
     private final WorkExecutor scheduleWorkExecutor = new ScheduleWorkExecutor();
@@ -79,11 +79,11 @@ public class GeronimoWorkManager implements WorkManager {
         this(null, null, null, null);
     }
 
-    public GeronimoWorkManager(Executor sync, Executor start, Executor sched, List<InflowContextHandler> inflowContextHandlers) {
+    public GeronimoWorkManager(Executor sync, Executor start, Executor sched, Collection<InflowContextHandler> inflowContextHandlers) {
         syncWorkExecutorPool = sync;
         startWorkExecutorPool = start;
         scheduledWorkExecutorPool = sched;
-        this.inflowContextHandlers = inflowContextHandlers == null? Collections.<InflowContextHandler>emptyList(): inflowContextHandlers;
+        this.inflowContextHandlers = inflowContextHandlers == null ? Collections.<InflowContextHandler>emptyList() : inflowContextHandlers;
     }
 
     public void doStart() throws Exception {
@@ -188,9 +188,8 @@ public class GeronimoWorkManager implements WorkManager {
      * Execute the specified Work.
      *
      * @param work Work to be executed.
-     *
-     * @exception WorkException Indicates that the Work execution has been
-     * unsuccessful.
+     * @throws WorkException Indicates that the Work execution has been
+     *                       unsuccessful.
      */
     private void executeWork(WorkerContext work, WorkExecutor workExecutor, Executor pooledExecutor) throws WorkException {
         work.workAccepted(this);

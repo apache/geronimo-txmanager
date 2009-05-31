@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import javax.resource.NotSupportedException;
@@ -131,9 +132,9 @@ public class WorkerContext implements Work {
      * @param work   Work to be wrapped.
      * @param inflowContextHandlers InflowContextHandlers supported by this work manager
      */
-    public WorkerContext(Work work, List<InflowContextHandler> inflowContextHandlers) {
+    public WorkerContext(Work work, Collection<InflowContextHandler> inflowContextHandlers) {
         adaptee = work;
-        this.inflowContextHandlers = inflowContextHandlers;
+        this.inflowContextHandlers = new ArrayList<InflowContextHandler>(inflowContextHandlers);
         executionContext = null;
         workListener = NULL_WORK_LISTENER;
     }
@@ -154,7 +155,7 @@ public class WorkerContext implements Work {
     public WorkerContext(Work aWork,
                          long aStartTimeout,
                          ExecutionContext execContext,
-                         WorkListener workListener, List<InflowContextHandler> inflowContextHandlers) throws WorkRejectedException {
+                         WorkListener workListener, Collection<InflowContextHandler> inflowContextHandlers) throws WorkRejectedException {
         adaptee = aWork;
         startTimeOut = aStartTimeout;
         if (null == workListener) {
@@ -170,7 +171,7 @@ public class WorkerContext implements Work {
         } else {
             executionContext = execContext;
         }
-        this.inflowContextHandlers = inflowContextHandlers;
+        this.inflowContextHandlers = new ArrayList<InflowContextHandler>(inflowContextHandlers);
     }
 
     /* (non-Javadoc)
@@ -333,18 +334,30 @@ public class WorkerContext implements Work {
                     throw new WorkCompletedException("Duplicate or unhandled InflowContext: " + inflowContext);
                 }
             }
+            for (Iterator<InflowContextHandler> it = inflowContextHandlers.iterator(); it.hasNext();) {
+                InflowContextHandler inflowContextHandler = it.next();
+                if (!inflowContextHandler.required()) {
+                    it.remove();
+                }
+            }
             // TODO use a InflowContextLifecycleListener
 
             int i = 0;
             for (InflowContext inflowContext : inflowContexts) {
-                inflowContextHandlers.get(i).before(inflowContext);
+                sortedHandlers.get(i++).before(inflowContext);
+            }
+            for (InflowContextHandler inflowContextHandler: inflowContextHandlers) {
+                inflowContextHandler.before(null);
             }
             try {
                 adaptee.run();
             } finally {
                 int j = 0;
                 for (InflowContext inflowContext : inflowContexts) {
-                    inflowContextHandlers.get(j).after(inflowContext);
+                    sortedHandlers.get(j++).after(inflowContext);
+                }
+                for (InflowContextHandler inflowContextHandler: inflowContextHandlers) {
+                    inflowContextHandler.after(null);
                 }
             }
 

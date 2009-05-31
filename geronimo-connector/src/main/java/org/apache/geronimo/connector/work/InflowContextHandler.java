@@ -24,7 +24,7 @@ import javax.resource.spi.work.InflowContext;
 import javax.resource.spi.work.WorkCompletedException;
 
 /**
- * @version $Rev:$ $Date:$
+ * @version $Rev$ $Date$
  */
 public interface InflowContextHandler<E extends InflowContext> {
 
@@ -33,5 +33,7 @@ public interface InflowContextHandler<E extends InflowContext> {
     void after(E inflowContext) throws WorkCompletedException;
 
     Class<E> getHandledClass(); 
+
+    boolean required();
 
 }
