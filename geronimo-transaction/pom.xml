@@ -31,10 +31,11 @@
     <artifactId>geronimo-transaction</artifactId>
     <name>Geronimo TxManager :: Transaction</name>
     <packaging>bundle</packaging>
-    
+    <description>Geronimo Transaction Manager</description>
+
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
     <properties>
-        <geronimo.txmanager.osgi.export.pkg>org.apache.geronimo.transaction</geronimo.txmanager.osgi.export.pkg>
-        <geronimo.txmanager.osgi.import.pkg>org.objectweb.howl*;resolution:=optional,*</geronimo.txmanager.osgi.import.pkg>
+        <siteId>components/${artifactId}</siteId>
     </properties>
 
     <dependencies>
@@ -48,28 +49,43 @@
             <artifactId>slf4j-simple</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-jta_1.1_spec</artifactId>
         </dependency>
 
-            <dependency>
-                <groupId>org.apache.geronimo.specs</groupId>
-                <artifactId>geronimo-j2ee-connector_1.6_spec</artifactId>
-            </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-j2ee-connector_1.6_spec</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.objectweb.howl</groupId>
             <artifactId>howl</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Export-Package>org.apache.geronimo.transaction*;version=2.2</Export-Package>
+                        <Import-Package>org.objectweb.howl*;resolution:=optional,javax.resource.spi;version="1.5",*</Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
 

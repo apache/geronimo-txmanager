@@ -31,10 +31,11 @@
     <artifactId>geronimo-connector</artifactId>
     <name>Geronimo TxManager :: Connector</name>
     <packaging>bundle</packaging>
-    
+    <description>Geronimo J2CA Connector Framework</description>
+
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
     <properties>
-        <geronimo.txmanager.osgi.export.pkg>org.apache.geronimo.connector</geronimo.txmanager.osgi.export.pkg>
-        <geronimo.txmanager.osgi.import.pkg>*</geronimo.txmanager.osgi.import.pkg>
+        <siteId>components/${artifactId}</siteId>
     </properties>
 
     <dependencies>
@@ -66,12 +67,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <!-- Do not include META-INF/maven to avoid long file problems on windows -->
-                        <addMavenDescriptor>false</addMavenDescriptor>
-                    </archive>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -82,6 +77,15 @@
                 </executions>
             </plugin>
             
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Export-Package>org.apache.geronimo.connector*;version=2.2</Export-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

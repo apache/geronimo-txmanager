@@ -21,11 +21,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
-        <groupId>org.apache.geronimo.genesis.config</groupId>
-        <artifactId>project-config</artifactId>
-        <version>1.5</version>
+        <groupId>org.apache.geronimo.genesis.flava</groupId>
+        <artifactId>genesis-java5-flava</artifactId>
+        <version>2.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.geronimo.components</groupId>
@@ -33,35 +33,20 @@
     <version>2.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
-    
-    <description>
-        Geronimo Transaction Manager
-    </description>
-    
+
+    <description>Geronimo Transaction Manager</description>
+
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</connection>
         <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</developerConnection>
         <url>http://svn.apache.org/viewvc/geronimo/components/txmanager/trunk</url>
     </scm>
-    
+
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
     <properties>
-        <!--
-        NOTE: Project version, to be used instead of ${pom.version} since that
-              value magically changes when using SNAPSHOT versions.
-
-              This value *must* be kept in sync with the value of the <version>
-              element, and it will need to be changed manually before a release,
-              as the maven-release-plugin will not update this value.
-        -->
-        <version>2.2-SNAPSHOT</version>
-
-        <!-- OSGi properties -->
-        <geronimo.txmanager.osgi.export>${geronimo.txmanager.osgi.export.pkg}*;version=${version}</geronimo.txmanager.osgi.export>
-        <geronimo.txmanager.osgi.export.pkg/>
-        <geronimo.txmanager.osgi.import.pkg/>
-        <geronimo.txmanager.osgi.private.pkg/>
+        <siteId>components/${artifactId}</siteId>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -94,16 +79,16 @@
                 <artifactId>howl</artifactId>
                 <version>1.0.1-1</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>3.8.2</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <!-- INTERNAL -->
-            
+
             <dependency>
                 <groupId>org.apache.geronimo.components</groupId>
                 <artifactId>geronimo-transaction</artifactId>
@@ -116,103 +101,6 @@
         <module>geronimo-transaction</module>
         <module>geronimo-connector</module>
     </modules>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <configuration>
-                        <archive>
-                            <!-- Do not include META-INF/maven to avoid long file problems on windows -->
-                            <addMavenDescriptor>false</addMavenDescriptor>
-                        </archive>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <!-- Build *test.jar files for modules -->
-                                <goal>test-jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                
-                <plugin>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>maven-bundle-plugin</artifactId>
-                    <version>1.2.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <!-- Allow any Java >= 1.5 -->
-                                <requireJavaVersion>
-                                    <version>[1.5,)</version>
-                                </requireJavaVersion>
-                                
-                                <!-- Allow any Maven >= 2.0.9 -->
-                                <requireMavenVersion>
-                                    <version>[2.0.9,)</version>
-                                </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>ianal-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>verify-legal-files</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Fail the build if any artifacts are missing legal files -->
-                            <strict>true</strict>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>bundle</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <Export-Package>${geronimo.txmanager.osgi.export}</Export-Package>
-                        <Import-Package>${geronimo.txmanager.osgi.import.pkg}*</Import-Package>
-                        <Private-Package>${geronimo.txmanager.osgi.private.pkg}</Private-Package>
-                    </instructions>
-                    <unpackBundle>true</unpackBundle>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>
 
