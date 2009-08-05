@@ -57,6 +57,13 @@
             <groupId>org.objectweb.howl</groupId>
             <artifactId>howl</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
     </dependencies>
 
 </project>
