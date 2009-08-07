@@ -80,6 +80,8 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
                     ManagedConnectionInfo previousMci = connectionInfo.getManagedConnectionInfo();
                     if (previousMci != null && previousMci != managedConnectionInfo && previousMci.getManagedConnection() != null) {
                         //This might occur if more than one connection were obtained before a UserTransaction were started.
+                        //enlists connection
+                        next.getConnection(connectionInfo);
                         managedConnectionInfos.addUnshared(previousMci);
                     } else {
                         connectionInfo.setManagedConnectionInfo(managedConnectionInfo);
