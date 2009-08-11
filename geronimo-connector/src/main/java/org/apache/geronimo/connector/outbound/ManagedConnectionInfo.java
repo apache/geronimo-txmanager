@@ -151,4 +151,9 @@ public class ManagedConnectionInfo {
         return listener.isFirstConnectionInfo(connectionInfo);
     }
 
+    @Override
+    public String toString() {
+        return "ManagedConnectionInfo: " + super.toString() + ". mc: " + managedConnection + "]";
+    }
+    
 }
