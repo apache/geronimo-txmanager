@@ -77,18 +77,25 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
             } else {
                 ManagedConnectionInfo managedConnectionInfo = managedConnectionInfos.getShared();
                 if (managedConnectionInfo != null) {
-                    connectionInfo.setManagedConnectionInfo(managedConnectionInfo);
-                    //return;
-                    if (log.isTraceEnabled()) {
-                        log.trace(
-                                "supplying connection from tx cache " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                    ManagedConnectionInfo previousMci = connectionInfo.getManagedConnectionInfo();
+                    if (previousMci != null && previousMci != managedConnectionInfo && previousMci.getManagedConnection() != null) {
+                        //This might occur if more than one connection were obtained before a UserTransaction were started.
+                        //enlists connection
+                        next.getConnection(connectionInfo);
+                        managedConnectionInfos.addUnshared(previousMci);
+                    } else {
+                        connectionInfo.setManagedConnectionInfo(managedConnectionInfo);
+
+                        //return;
+                        if (log.isTraceEnabled()) {
+                            log.trace("supplying connection from tx cache " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                        }
                     }
                 } else {
                     next.getConnection(connectionInfo);
                     managedConnectionInfos.setShared(connectionInfo.getManagedConnectionInfo());
                     if (log.isTraceEnabled()) {
-                        log.trace(
-                                "supplying connection from pool " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                        log.trace("supplying connection from pool " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
                     }
                 }
             }
@@ -112,8 +119,7 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
             if (transaction != null) {
                 if (TxUtil.isActive(transaction)) {
                     if (log.isTraceEnabled()) {
-                        log.trace(
-                                "tx active, not returning connection" + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                        log.trace("tx active, not returning connection" + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
                     }
                     return;
                 }
@@ -137,16 +143,14 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
     private void internalReturn(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
         if (connectionInfo.getManagedConnectionInfo().hasConnectionHandles()) {
             if (log.isTraceEnabled()) {
-                log.trace(
-                        "not returning connection from tx cache (has handles) " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                log.trace("not returning connection from tx cache (has handles) " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
             }
             return;
         }
         //No transaction, no handles, we return it.
         next.returnConnection(connectionInfo, connectionReturnAction);
         if (log.isTraceEnabled()) {
-            log.trace(
-                    "completed return of connection through tx cache " + connectionInfo.getConnectionHandle() + " for MCI: " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+            log.trace("completed return of connection through tx cache " + connectionInfo.getConnectionHandle() + " for MCI: " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
         }
     }
 

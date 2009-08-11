@@ -45,7 +45,6 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
     private boolean selectOneAssumeMatch;
 
     //pool is mutable but only changed when protected by write lock on resizelock in superclass
-//    private PoolDeque pool;
     private final List<ManagedConnectionInfo> pool;
 
     public SinglePoolConnectionInterceptor(final ConnectionInterceptor next,
@@ -55,7 +54,6 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                                            int idleTimeoutMinutes,
                                            boolean selectOneAssumeMatch) {
         super(next, maxSize, minSize, blockingTimeoutMilliseconds, idleTimeoutMinutes);
-//        pool = new PoolDeque(maxSize);
         pool = new ArrayList<ManagedConnectionInfo>(maxSize);
         this.selectOneAssumeMatch = selectOneAssumeMatch;
     }
@@ -71,7 +69,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                 next.getConnection(connectionInfo);
                 connectionCount++;
                 if (log.isTraceEnabled()) {
-                    log.trace("Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
+                    log.trace("Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
                 }
                 return;
             } else {
@@ -83,33 +81,34 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             if (selectOneAssumeMatch) {
                 connectionInfo.setManagedConnectionInfo(newMCI);
                 if (log.isTraceEnabled()) {
-                    log.trace("Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
+                    log.trace("Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
                 }
                 return;
             }
+            ManagedConnection matchedMC;
             try {
                 ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
-                ManagedConnection matchedMC = newMCI.getManagedConnectionFactory().matchManagedConnections(Collections.singleton(newMCI.getManagedConnection()),
+                matchedMC = newMCI.getManagedConnectionFactory().matchManagedConnections(Collections.singleton(newMCI.getManagedConnection()),
                         mci.getSubject(),
                         mci.getConnectionRequestInfo());
-                if (matchedMC != null) {
-                    connectionInfo.setManagedConnectionInfo(newMCI);
-                    if (log.isTraceEnabled()) {
-                        log.trace("Supplying pooled connection  MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
-                    }
-                } else {
-                    //matching failed.
-                    ConnectionInfo returnCI = new ConnectionInfo();
-                    returnCI.setManagedConnectionInfo(newMCI);
-                    returnConnection(returnCI, ConnectionReturnAction.RETURN_HANDLE);
-                    throw new ResourceException("The pooling strategy does not match the MatchManagedConnections implementation.  Please investigate and reconfigure this pool");
-                }
             } catch (ResourceException e) {
                 //something is wrong: destroy connection, rethrow, release permit
                 ConnectionInfo returnCI = new ConnectionInfo();
                 returnCI.setManagedConnectionInfo(newMCI);
                 returnConnection(returnCI, ConnectionReturnAction.DESTROY);
                 throw e;
+            }
+            if (matchedMC != null) {
+                connectionInfo.setManagedConnectionInfo(newMCI);
+                if (log.isTraceEnabled()) {
+                    log.trace("Supplying pooled connection  MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
+                }
+            } else {
+                //matching failed.
+                ConnectionInfo returnCI = new ConnectionInfo();
+                returnCI.setManagedConnectionInfo(newMCI);
+                returnConnection(returnCI, ConnectionReturnAction.RETURN_HANDLE);
+                throw new ResourceException("The pooling strategy does not match the MatchManagedConnections implementation.  Please investigate and reconfigure this pool");
             }
         }
     }
@@ -138,7 +137,12 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
         pool.add(mci);
     }
 
+    /**
+     * @param mci managedConnectionInfo to remove from pool
+     * @return true if mci was not in pool already, false if mci was in pool already.
+     */
     protected boolean doRemove(ManagedConnectionInfo mci) {
+        log.info("Removing " + mci + " from pool " + this);
         return !pool.remove(mci);
     }
 

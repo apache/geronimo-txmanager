@@ -72,7 +72,12 @@ public class ThreadLocalCachingConnectionInterceptor implements ConnectionInterc
     }
 
     public void returnConnection(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
-        if (connectionReturnAction == ConnectionReturnAction.DESTROY || connectionInfo.isUnshareable()) {
+        if (connectionReturnAction == ConnectionReturnAction.DESTROY
+                || connectionInfo.isUnshareable()
+                || !connectionInfo.getManagedConnectionInfo().hasConnectionHandles()) {
+            if (connections.get() == connectionInfo.getManagedConnectionInfo()) {
+                connections.remove();
+            }
             next.returnConnection(connectionInfo, connectionReturnAction);
         }
     }

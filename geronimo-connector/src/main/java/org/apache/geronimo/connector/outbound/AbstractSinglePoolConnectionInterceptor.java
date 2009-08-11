@@ -103,7 +103,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
     public void returnConnection(ConnectionInfo connectionInfo,
                                  ConnectionReturnAction connectionReturnAction) {
         if (log.isTraceEnabled()) {
-            log.trace("returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this);
+            log.trace("returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " to pool " + this);
         }
 
         // not strictly synchronized with destroy(), but pooled operations in internalReturn() are...
@@ -120,9 +120,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
         try {
             ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
             if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE && mci.hasConnectionHandles()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
-                }
+                log.warn("Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
                 return;
             }
 
@@ -136,6 +134,14 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
         }
     }
 
+
+    /**
+     *
+     * @param connectionInfo connection info to return to pool
+     * @param connectionReturnAction whether to return to pool or destroy
+     * @return true if a connection for which a permit was issued was returned (so the permit should be released),
+     * false if no permit was issued (for instance if the connection was already in the pool and we are destroying it).
+     */
     protected boolean internalReturn(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
         ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
         ManagedConnection mc = mci.getManagedConnection();
