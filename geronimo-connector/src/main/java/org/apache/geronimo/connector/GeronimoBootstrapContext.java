@@ -21,6 +21,8 @@ import java.util.Timer;
 import javax.resource.spi.UnavailableException;
 import javax.resource.spi.XATerminator;
 import javax.resource.spi.work.WorkManager;
+import javax.resource.spi.work.WorkContext;
+import javax.transaction.TransactionSynchronizationRegistry;
 
 /**
  * GBean BootstrapContext implementation that refers to externally configured WorkManager
@@ -70,6 +72,14 @@ public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapCon
      */
     public Timer createTimer() throws UnavailableException {
         return new Timer();
+    }
+
+    public TransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
+        return null;
+    }
+
+    public boolean isContextSupported(Class<? extends WorkContext> aClass) {
+        return false;
     }
 
 }

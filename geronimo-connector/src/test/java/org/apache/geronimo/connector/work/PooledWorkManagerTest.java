@@ -52,7 +52,7 @@ public class PooledWorkManagerTest extends TestCase {
         super.setUp();
         
         XAWork xaWork = new GeronimoTransactionManager();
-        TransactionInflowContextHandler txInflowContextHandler = new TransactionInflowContextHandler(xaWork);
+        TransactionContextHandler txWorkContextHandler = new TransactionContextHandler(xaWork);
         int poolSize = 1;
         int keepAliveTime = 30000;
         ThreadPoolExecutor pool = new ThreadPoolExecutor(
@@ -65,7 +65,7 @@ public class PooledWorkManagerTest extends TestCase {
         pool.setThreadFactory(new ThreadPoolThreadFactory("Connector Test", getClass().getClassLoader()));
 
 
-        workManager = new GeronimoWorkManager(pool, pool, pool, Collections.<InflowContextHandler>singletonList(txInflowContextHandler));
+        workManager = new GeronimoWorkManager(pool, pool, pool, Collections.<WorkContextHandler>singletonList(txWorkContextHandler));
         workManager.doStart();
     }
 

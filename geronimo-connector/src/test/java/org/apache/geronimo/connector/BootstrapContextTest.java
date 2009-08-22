@@ -31,8 +31,8 @@ import javax.resource.spi.work.WorkManager;
 
 import junit.framework.TestCase;
 import org.apache.geronimo.connector.work.GeronimoWorkManager;
-import org.apache.geronimo.connector.work.TransactionInflowContextHandler;
-import org.apache.geronimo.connector.work.InflowContextHandler;
+import org.apache.geronimo.connector.work.TransactionContextHandler;
+import org.apache.geronimo.connector.work.WorkContextHandler;
 import org.apache.geronimo.transaction.manager.GeronimoTransactionManager;
 import org.apache.geronimo.transaction.manager.XAWork;
 
@@ -97,8 +97,8 @@ public class BootstrapContextTest extends TestCase {
      */
     public void testGetSetWorkManager() throws Exception {
         GeronimoTransactionManager transactionManager = new GeronimoTransactionManager();
-        TransactionInflowContextHandler txInflowContextHandler = new TransactionInflowContextHandler(transactionManager);
-        GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<InflowContextHandler>singletonList(txInflowContextHandler));
+        TransactionContextHandler txWorkContextHandler = new TransactionContextHandler(transactionManager);
+        GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<WorkContextHandler>singletonList(txWorkContextHandler));
         GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager);
         WorkManager wm = context.getWorkManager();
 
@@ -110,8 +110,8 @@ public class BootstrapContextTest extends TestCase {
      */
     public void testGetSetXATerminator() throws Exception {
         GeronimoTransactionManager transactionManager = new GeronimoTransactionManager();
-        TransactionInflowContextHandler txInflowContextHandler = new TransactionInflowContextHandler(transactionManager);
-        GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<InflowContextHandler>singletonList(txInflowContextHandler));
+        TransactionContextHandler txWorkContextHandler = new TransactionContextHandler(transactionManager);
+        GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<WorkContextHandler>singletonList(txWorkContextHandler));
         GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager);
         XATerminator xat = context.getXATerminator();
 

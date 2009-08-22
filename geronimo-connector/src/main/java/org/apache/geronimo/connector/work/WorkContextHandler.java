@@ -20,17 +20,17 @@
 
 package org.apache.geronimo.connector.work;
 
-import javax.resource.spi.work.InflowContext;
+import javax.resource.spi.work.WorkContext;
 import javax.resource.spi.work.WorkCompletedException;
 
 /**
  * @version $Rev$ $Date$
  */
-public interface InflowContextHandler<E extends InflowContext> {
+public interface WorkContextHandler<E extends WorkContext> {
 
-    void before(E inflowContext) throws WorkCompletedException;
+    void before(E workContext) throws WorkCompletedException;
 
-    void after(E inflowContext) throws WorkCompletedException;
+    void after(E workContext) throws WorkCompletedException;
 
     Class<E> getHandledClass(); 
 

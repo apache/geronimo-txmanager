@@ -26,9 +26,9 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.resource.NotSupportedException;
 import javax.resource.spi.work.ExecutionContext;
-import javax.resource.spi.work.InflowContext;
-import javax.resource.spi.work.InflowContextProvider;
-import javax.resource.spi.work.TransactionInflowContext;
+import javax.resource.spi.work.WorkContext;
+import javax.resource.spi.work.WorkContextProvider;
+import javax.resource.spi.work.TransactionContext;
 import javax.resource.spi.work.Work;
 import javax.resource.spi.work.WorkAdapter;
 import javax.resource.spi.work.WorkCompletedException;
@@ -50,7 +50,7 @@ public class WorkerContext implements Work {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerContext.class);
 
-    private static final List<InflowContext> NO_INFLOW_CONTEXT = Collections.emptyList();
+    private static final List<WorkContext> NO_INFLOW_CONTEXT = Collections.emptyList();
 
     /**
      * Null WorkListener used as the default WorkListener.
@@ -123,18 +123,18 @@ public class WorkerContext implements Work {
      */
     private final ExecutionContext executionContext;
 
-    private final List<InflowContextHandler> inflowContextHandlers;
+    private final List<WorkContextHandler> workContextHandlers;
 
 
     /**
      * Create a WorkWrapper.
-     * TODO include a InflowContextLifecycleListener
+     * TODO include a WorkContextLifecycleListener
      * @param work   Work to be wrapped.
-     * @param inflowContextHandlers InflowContextHandlers supported by this work manager
+     * @param workContextHandlers WorkContextHandlers supported by this work manager
      */
-    public WorkerContext(Work work, Collection<InflowContextHandler> inflowContextHandlers) {
+    public WorkerContext(Work work, Collection<WorkContextHandler> workContextHandlers) {
         adaptee = work;
-        this.inflowContextHandlers = new ArrayList<InflowContextHandler>(inflowContextHandlers);
+        this.workContextHandlers = new ArrayList<WorkContextHandler>(workContextHandlers);
         executionContext = null;
         workListener = NULL_WORK_LISTENER;
     }
@@ -142,20 +142,20 @@ public class WorkerContext implements Work {
     /**
      * Create a WorkWrapper with the specified execution context.
      *
-     * TODO include a InflowContextLifecycleListener
+     * TODO include a WorkContextLifecycleListener
      * @param aWork         Work to be wrapped.
      * @param aStartTimeout a time duration (in milliseconds) within which the
  *                      execution of the Work instance must start.
      * @param execContext   an object containing the execution context with which
 *                      the submitted Work instance must be executed.
      * @param workListener  an object which would be notified when the various
-     * @param inflowContextHandlers InflowContextHandlers supported by this work manager
-     * @throws javax.resource.spi.work.WorkRejectedException if executionContext supplied yet Work implements InflowContextProvider
+     * @param workContextHandlers WorkContextHandlers supported by this work manager
+     * @throws javax.resource.spi.work.WorkRejectedException if executionContext supplied yet Work implements WorkContextProvider
      */
     public WorkerContext(Work aWork,
                          long aStartTimeout,
                          ExecutionContext execContext,
-                         WorkListener workListener, Collection<InflowContextHandler> inflowContextHandlers) throws WorkRejectedException {
+                         WorkListener workListener, Collection<WorkContextHandler> workContextHandlers) throws WorkRejectedException {
         adaptee = aWork;
         startTimeOut = aStartTimeout;
         if (null == workListener) {
@@ -163,15 +163,15 @@ public class WorkerContext implements Work {
         } else {
             this.workListener = workListener;
         }
-        if (aWork instanceof InflowContextProvider) {
+        if (aWork instanceof WorkContextProvider) {
             if (execContext != null) {
-                throw new WorkRejectedException("Execution context provided but Work implements InflowContextProvider");
+                throw new WorkRejectedException("Execution context provided but Work implements WorkContextProvider");
             }
             executionContext = null;
         } else {
             executionContext = execContext;
         }
-        this.inflowContextHandlers = new ArrayList<InflowContextHandler>(inflowContextHandlers);
+        this.workContextHandlers = new ArrayList<WorkContextHandler>(workContextHandlers);
     }
 
     /* (non-Javadoc)
@@ -305,59 +305,59 @@ public class WorkerContext implements Work {
         //Implementation note: we assume this is being called without an interesting TransactionContext,
         //and ignore/replace whatever is associated with the current thread.
         try {
-            List<InflowContext> inflowContexts = NO_INFLOW_CONTEXT;
+            List<WorkContext> workContexts = NO_INFLOW_CONTEXT;
             if (executionContext != null) {
-                TransactionInflowContext txInflowContext = new TransactionInflowContext();
+                TransactionContext txWorkContext = new TransactionContext();
                 try {
-                    txInflowContext.setTransactionTimeout(executionContext.getTransactionTimeout());
+                    txWorkContext.setTransactionTimeout(executionContext.getTransactionTimeout());
                 } catch (NotSupportedException e) {
                     throw new WorkRejectedException("Could not read tx timeout");
                 }
-                inflowContexts = Collections.<InflowContext>singletonList(txInflowContext);
-            } else if (adaptee instanceof InflowContextProvider) {
-                inflowContexts = ((InflowContextProvider) adaptee).getInflowContexts();
+                workContexts = Collections.<WorkContext>singletonList(txWorkContext);
+            } else if (adaptee instanceof WorkContextProvider) {
+                workContexts = ((WorkContextProvider) adaptee).getWorkContexts();
             }
-            List<InflowContextHandler> sortedHandlers = new ArrayList<InflowContextHandler>(inflowContexts.size());
-            for (InflowContext inflowContext : inflowContexts) {
+            List<WorkContextHandler> sortedHandlers = new ArrayList<WorkContextHandler>(workContexts.size());
+            for (WorkContext workContext : workContexts) {
                 boolean found = false;
-                for (Iterator<InflowContextHandler> it = inflowContextHandlers.iterator(); it.hasNext();) {
-                    InflowContextHandler inflowContextHandler = it.next();
+                for (Iterator<WorkContextHandler> it = workContextHandlers.iterator(); it.hasNext();) {
+                    WorkContextHandler workContextHandler = it.next();
                     //TODO is this the right way around?
-                    if (inflowContext.getClass().isAssignableFrom(inflowContextHandler.getHandledClass())) {
+                    if (workContext.getClass().isAssignableFrom(workContextHandler.getHandledClass())) {
                         it.remove();
-                        sortedHandlers.add(inflowContextHandler);
+                        sortedHandlers.add(workContextHandler);
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    throw new WorkCompletedException("Duplicate or unhandled InflowContext: " + inflowContext);
+                    throw new WorkCompletedException("Duplicate or unhandled WorkContext: " + workContext);
                 }
             }
-            for (Iterator<InflowContextHandler> it = inflowContextHandlers.iterator(); it.hasNext();) {
-                InflowContextHandler inflowContextHandler = it.next();
-                if (!inflowContextHandler.required()) {
+            for (Iterator<WorkContextHandler> it = workContextHandlers.iterator(); it.hasNext();) {
+                WorkContextHandler workContextHandler = it.next();
+                if (!workContextHandler.required()) {
                     it.remove();
                 }
             }
-            // TODO use a InflowContextLifecycleListener
+            // TODO use a WorkContextLifecycleListener
 
             int i = 0;
-            for (InflowContext inflowContext : inflowContexts) {
-                sortedHandlers.get(i++).before(inflowContext);
+            for (WorkContext workContext : workContexts) {
+                sortedHandlers.get(i++).before(workContext);
             }
-            for (InflowContextHandler inflowContextHandler: inflowContextHandlers) {
-                inflowContextHandler.before(null);
+            for (WorkContextHandler workContextHandler: workContextHandlers) {
+                workContextHandler.before(null);
             }
             try {
                 adaptee.run();
             } finally {
                 int j = 0;
-                for (InflowContext inflowContext : inflowContexts) {
-                    sortedHandlers.get(j++).after(inflowContext);
+                for (WorkContext workContext : workContexts) {
+                    sortedHandlers.get(j++).after(workContext);
                 }
-                for (InflowContextHandler inflowContextHandler: inflowContextHandlers) {
-                    inflowContextHandler.after(null);
+                for (WorkContextHandler workContextHandler: workContextHandlers) {
+                    workContextHandler.after(null);
                 }
             }
 

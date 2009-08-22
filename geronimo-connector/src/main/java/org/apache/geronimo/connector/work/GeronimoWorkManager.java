@@ -65,7 +65,7 @@ public class GeronimoWorkManager implements WorkManager {
      */
     private Executor scheduledWorkExecutorPool;
 
-    private final Collection<InflowContextHandler> inflowContextHandlers;
+    private final Collection<WorkContextHandler> workContextHandlers;
 
 
     private final WorkExecutor scheduleWorkExecutor = new ScheduleWorkExecutor();
@@ -79,11 +79,11 @@ public class GeronimoWorkManager implements WorkManager {
         this(null, null, null, null);
     }
 
-    public GeronimoWorkManager(Executor sync, Executor start, Executor sched, Collection<InflowContextHandler> inflowContextHandlers) {
+    public GeronimoWorkManager(Executor sync, Executor start, Executor sched, Collection<WorkContextHandler> workContextHandlers) {
         syncWorkExecutorPool = sync;
         startWorkExecutorPool = start;
         scheduledWorkExecutorPool = sched;
-        this.inflowContextHandlers = inflowContextHandlers == null ? Collections.<InflowContextHandler>emptyList() : inflowContextHandlers;
+        this.workContextHandlers = workContextHandlers == null ? Collections.<WorkContextHandler>emptyList() : workContextHandlers;
     }
 
     public void doStart() throws Exception {
@@ -116,7 +116,7 @@ public class GeronimoWorkManager implements WorkManager {
     * @see javax.resource.spi.work.WorkManager#doWork(javax.resource.spi.work.Work)
     */
     public void doWork(Work work) throws WorkException {
-        executeWork(new WorkerContext(work, inflowContextHandlers), syncWorkExecutor, syncWorkExecutorPool);
+        executeWork(new WorkerContext(work, workContextHandlers), syncWorkExecutor, syncWorkExecutorPool);
     }
 
     /* (non-Javadoc)
@@ -129,7 +129,7 @@ public class GeronimoWorkManager implements WorkManager {
             WorkListener workListener)
             throws WorkException {
         WorkerContext workWrapper =
-                new WorkerContext(work, startTimeout, execContext, workListener, inflowContextHandlers);
+                new WorkerContext(work, startTimeout, execContext, workListener, workContextHandlers);
         workWrapper.setThreadPriority(Thread.currentThread().getPriority());
         executeWork(workWrapper, syncWorkExecutor, syncWorkExecutorPool);
     }
@@ -138,7 +138,7 @@ public class GeronimoWorkManager implements WorkManager {
      * @see javax.resource.spi.work.WorkManager#startWork(javax.resource.spi.work.Work)
      */
     public long startWork(Work work) throws WorkException {
-        WorkerContext workWrapper = new WorkerContext(work, inflowContextHandlers);
+        WorkerContext workWrapper = new WorkerContext(work, workContextHandlers);
         workWrapper.setThreadPriority(Thread.currentThread().getPriority());
         executeWork(workWrapper, startWorkExecutor, startWorkExecutorPool);
         return System.currentTimeMillis() - workWrapper.getAcceptedTime();
@@ -154,7 +154,7 @@ public class GeronimoWorkManager implements WorkManager {
             WorkListener workListener)
             throws WorkException {
         WorkerContext workWrapper =
-                new WorkerContext(work, startTimeout, execContext, workListener, inflowContextHandlers);
+                new WorkerContext(work, startTimeout, execContext, workListener, workContextHandlers);
         workWrapper.setThreadPriority(Thread.currentThread().getPriority());
         executeWork(workWrapper, startWorkExecutor, startWorkExecutorPool);
         return System.currentTimeMillis() - workWrapper.getAcceptedTime();
@@ -164,7 +164,7 @@ public class GeronimoWorkManager implements WorkManager {
      * @see javax.resource.spi.work.WorkManager#scheduleWork(javax.resource.spi.work.Work)
      */
     public void scheduleWork(Work work) throws WorkException {
-        WorkerContext workWrapper = new WorkerContext(work, inflowContextHandlers);
+        WorkerContext workWrapper = new WorkerContext(work, workContextHandlers);
         workWrapper.setThreadPriority(Thread.currentThread().getPriority());
         executeWork(workWrapper, scheduleWorkExecutor, scheduledWorkExecutorPool);
     }
@@ -179,7 +179,7 @@ public class GeronimoWorkManager implements WorkManager {
             WorkListener workListener)
             throws WorkException {
         WorkerContext workWrapper =
-                new WorkerContext(work, startTimeout, execContext, workListener, inflowContextHandlers);
+                new WorkerContext(work, startTimeout, execContext, workListener, workContextHandlers);
         workWrapper.setThreadPriority(Thread.currentThread().getPriority());
         executeWork(workWrapper, scheduleWorkExecutor, scheduledWorkExecutorPool);
     }
