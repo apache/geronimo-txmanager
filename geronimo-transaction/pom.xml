@@ -74,8 +74,9 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Export-Package>org.apache.geronimo.transaction*;version=2.1.3</Export-Package>
-                        <Import-Package>org.objectweb.howl*;resolution:=optional,javax.resource.spi;version="1.5",*</Import-Package>
+                        <Export-Package>org.apache.geronimo.transaction*;version=${project.version}</Export-Package>
+                        <Import-Package>!org.apache.geronimo.transaction*,org.objectweb.howl*;resolution:=optional;version="[1.0,2)",*</Import-Package>
+                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
                 </configuration>
             </plugin>

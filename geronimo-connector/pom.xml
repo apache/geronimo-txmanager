@@ -70,7 +70,9 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Export-Package>org.apache.geronimo.connector*;version=2.1.3</Export-Package>
+                        <Export-Package>org.apache.geronimo.connector*;version=${project.version}</Export-Package>
+                        <Import-Package>!org.apache.geronimo.connector*,*</Import-Package>
+                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
                 </configuration>
             </plugin>
