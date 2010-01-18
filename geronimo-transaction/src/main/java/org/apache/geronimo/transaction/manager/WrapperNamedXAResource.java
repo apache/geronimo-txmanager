@@ -35,6 +35,8 @@ public class WrapperNamedXAResource implements NamedXAResource {
     private final String name;
 
     public WrapperNamedXAResource(XAResource xaResource, String name) {
+        if (xaResource == null) throw new NullPointerException("No XAResource supplied.  XA support may not be configured properly");
+        if (name == null) throw new NullPointerException("No name supplied. Resource adapter not properly configured");
         this.xaResource = xaResource;
         this.name = name;
     }
