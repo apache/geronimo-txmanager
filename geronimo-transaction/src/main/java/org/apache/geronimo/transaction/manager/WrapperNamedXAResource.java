@@ -47,7 +47,7 @@ public class WrapperNamedXAResource implements NamedXAResource {
 
     public void commit(Xid xid, boolean onePhase) throws XAException {
         xaResource.commit(xid, onePhase);
-    }
+    }                                                                                                                   
 
     public void end(Xid xid, int flags) throws XAException {
         xaResource.end(xid, flags);
