@@ -101,6 +101,7 @@ public class ActivationSpecWrapper {
     public void deactivate(final MessageEndpointFactory messageEndpointFactory) {
         ResourceAdapter resourceAdapter = activationSpec.getResourceAdapter();
         if (resourceAdapter != null) {
+            resourceAdapterWrapper.deregisterRecovery(containerId);
             resourceAdapterWrapper.endpointDeactivation(messageEndpointFactory, activationSpec);
         } else {
             //this should never happen, activation spec should have been registered with r.a.

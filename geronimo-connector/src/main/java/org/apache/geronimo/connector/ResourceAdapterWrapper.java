@@ -30,6 +30,7 @@ import javax.transaction.SystemException;
 import javax.transaction.xa.XAResource;
 
 import org.apache.geronimo.transaction.manager.NamedXAResource;
+import org.apache.geronimo.transaction.manager.NamedXAResourceFactory;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
 import org.apache.geronimo.transaction.manager.WrapperNamedXAResource;
 
@@ -124,17 +125,11 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
     }
 
     public void doRecovery(ActivationSpec activationSpec, String containerId) {
-        try {
-            XAResource[] xaResources = getXAResources(new ActivationSpec[]{activationSpec});
-            if (xaResources == null || xaResources.length == 0) {
-                return;
-            }
-            NamedXAResource xaResource = new WrapperNamedXAResource(xaResources[0], containerId);
-            transactionManager.recoverResourceManager(xaResource);
-        } catch (ResourceException e) {
-            transactionManager.recoveryError((SystemException) new SystemException("Could not get XAResource for recovery for mdb: " + containerId).initCause(e));
-        }
+        transactionManager.registerNamedXAResourceFactory(new ActivationSpecNamedXAResourceFactory(containerId, activationSpec, resourceAdapter));
+    }
 
+    public void deregisterRecovery(String containerId) {
+        transactionManager.unregisterNamedXAResourceFactory(containerId);
     }
 
     public void endpointDeactivation(final MessageEndpointFactory messageEndpointFactory, final ActivationSpec activationSpec) {

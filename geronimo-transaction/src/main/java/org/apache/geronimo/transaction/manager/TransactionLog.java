@@ -36,9 +36,10 @@ public interface TransactionLog {
      * log prepare for the global xid xid and the list of TransactionBranchInfo branches
      * @param xid global xid for the transactions
      * @param branches List of TransactionBranchInfo
-     * @throws LogException
+     * @return log mark to use in commit/rollback calls.
+     * @throws LogException on error
      */
-    Object prepare(Xid xid, List branches) throws LogException;
+    Object prepare(Xid xid, List<TransactionBranchInfo> branches) throws LogException;
 
     void commit(Xid xid, Object logMark) throws LogException;
 
@@ -48,11 +49,11 @@ public interface TransactionLog {
      * Recovers the log, returning a map of (top level) xid to List of TransactionBranchInfo for the branches.
      * Uses the XidFactory to reconstruct the xids.
      *
-     * @param xidFactory
+     * @param xidFactory Xid factory
      * @return Map of recovered xid to List of TransactionBranchInfo representing the branches.
-     * @throws LogException
+     * @throws LogException on error
      */
-    Collection recover(XidFactory xidFactory) throws LogException;
+    Collection<Recovery.XidBranchesPair> recover(XidFactory xidFactory) throws LogException;
 
     String getXMLStats();
 

@@ -20,15 +20,17 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.TransactionManager;
+import javax.transaction.SystemException;
 
 /**
  * @version $Rev$ $Date$
  */
-public interface RecoverableTransactionManager extends TransactionManager {
-    void recoveryError(Exception e);
+public interface NamedXAResourceFactory {
 
-    void registerNamedXAResourceFactory(NamedXAResourceFactory namedXAResourceFactory);
+    String getName();
 
-    void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName);
+    NamedXAResource getNamedXAResource() throws SystemException;
+
+    void returnNamedXAResource(NamedXAResource namedXAResource);
+
 }

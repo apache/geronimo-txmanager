@@ -20,6 +20,7 @@ package org.apache.geronimo.transaction.manager;
 import java.util.Set;
 import java.util.HashSet;
 
+import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -27,7 +28,7 @@ import javax.transaction.xa.Xid;
 /**
  * @version $Rev$ $Date$
  */
-public class MockResource implements NamedXAResource {
+public class MockResource implements NamedXAResource, NamedXAResourceFactory {
     private String xaResourceName = "mockResource";
     private Xid currentXid;
     private MockResourceManager manager;
@@ -151,6 +152,14 @@ public class MockResource implements NamedXAResource {
 
     public String getName() {
         return xaResourceName;
+    }
+
+    public NamedXAResource getNamedXAResource() throws SystemException {
+        return this;
+    }
+
+    public void returnNamedXAResource(NamedXAResource namedXAResource) {
+        if (this != namedXAResource) throw new RuntimeException("Wrong NamedXAResource returned: expected: " + this + " actual: " + namedXAResource);
     }
 
 }

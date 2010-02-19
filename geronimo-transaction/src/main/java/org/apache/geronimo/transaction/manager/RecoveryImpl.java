@@ -51,12 +51,12 @@ public class RecoveryImpl implements Recovery {
     private final TransactionLog txLog;
     private final XidFactory xidFactory;
 
-    private final Map externalXids = new HashMap();
-    private final Map ourXids = new HashMap();
-    private final Map nameToOurTxMap = new HashMap();
-    private final Map externalGlobalIdMap = new HashMap();
+    private final Map<Xid, TransactionImpl> externalXids = new HashMap<Xid, TransactionImpl>();
+    private final Map<ByteArrayWrapper, XidBranchesPair> ourXids = new HashMap<ByteArrayWrapper, XidBranchesPair>();
+    private final Map<String, Set<XidBranchesPair>> nameToOurTxMap = new HashMap<String, Set<XidBranchesPair>>();
+    private final Map<byte[], TransactionImpl> externalGlobalIdMap = new HashMap<byte[], TransactionImpl>();
 
-    private final List recoveryErrors = new ArrayList();
+    private final List<Exception> recoveryErrors = new ArrayList<Exception>();
 
     public RecoveryImpl(final TransactionLog txLog, final XidFactory xidFactory) {
         this.txLog = txLog;
@@ -64,22 +64,21 @@ public class RecoveryImpl implements Recovery {
     }
 
     public synchronized void recoverLog() throws XAException {
-        Collection preparedXids = null;
+        Collection<XidBranchesPair> preparedXids;
         try {
             preparedXids = txLog.recover(xidFactory);
         } catch (LogException e) {
             throw (XAException) new XAException(XAException.XAER_RMERR).initCause(e);
         }
-        for (Iterator iterator = preparedXids.iterator(); iterator.hasNext();) {
-            XidBranchesPair xidBranchesPair = (Recovery.XidBranchesPair) iterator.next();
+        for (XidBranchesPair xidBranchesPair : preparedXids) {
             Xid xid = xidBranchesPair.getXid();
             if (xidFactory.matchesGlobalId(xid.getGlobalTransactionId())) {
                 ourXids.put(new ByteArrayWrapper(xid.getGlobalTransactionId()), xidBranchesPair);
-                for (Iterator branches = xidBranchesPair.getBranches().iterator(); branches.hasNext();) {
-                    String name = ((TransactionBranchInfo) branches.next()).getResourceName();
-                    Set transactionsForName = (Set)nameToOurTxMap.get(name);
+                for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
+                    String name = transactionBranchInfo.getResourceName();
+                    Set<XidBranchesPair> transactionsForName = nameToOurTxMap.get(name);
                     if (transactionsForName == null) {
-                        transactionsForName = new HashSet();
+                        transactionsForName = new HashSet<XidBranchesPair>();
                         nameToOurTxMap.put(name, transactionsForName);
                     }
                     transactionsForName.add(xidBranchesPair);
@@ -99,7 +98,7 @@ public class RecoveryImpl implements Recovery {
         for (int i = 0; prepared != null && i < prepared.length; i++) {
             Xid xid = prepared[i];
             ByteArrayWrapper globalIdWrapper = new ByteArrayWrapper(xid.getGlobalTransactionId());
-            XidBranchesPair xidNamesPair = (XidBranchesPair) ourXids.get(globalIdWrapper);
+            XidBranchesPair xidNamesPair = ourXids.get(globalIdWrapper);
             
             if (xidNamesPair != null) {
                 
@@ -125,7 +124,7 @@ public class RecoveryImpl implements Recovery {
                 }
             } else if (xidFactory.matchesBranchId(xid.getBranchQualifier())) {
                 //our branch, but we did not start this tx.
-                TransactionImpl externalTx = (TransactionImpl) externalGlobalIdMap.get(xid.getGlobalTransactionId());
+                TransactionImpl externalTx = externalGlobalIdMap.get(xid.getGlobalTransactionId());
                 if (externalTx == null) {
                     //we did not prepare this branch, rollback.
                     try {
@@ -141,18 +140,16 @@ public class RecoveryImpl implements Recovery {
             }
             //else we had nothing to do with this xid.
         }
-        Set transactionsForName = (Set)nameToOurTxMap.get(name);
+        Set<XidBranchesPair> transactionsForName = nameToOurTxMap.get(name);
         if (transactionsForName != null) {
-            for (Iterator transactions = transactionsForName.iterator(); transactions.hasNext();) {
-                XidBranchesPair xidBranchesPair = (XidBranchesPair) transactions.next();
+            for (XidBranchesPair xidBranchesPair : transactionsForName) {
                 removeNameFromTransaction(xidBranchesPair, name, false);
             }
         }
     }
 
     private boolean isNameInTransaction(XidBranchesPair xidBranchesPair, String name) {
-        for (Iterator branches = xidBranchesPair.getBranches().iterator(); branches.hasNext();) {
-            TransactionBranchInfo transactionBranchInfo = (TransactionBranchInfo) branches.next();
+        for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
             if (name.equals(transactionBranchInfo.getResourceName())) {
                 return true;
             }
@@ -187,7 +184,7 @@ public class RecoveryImpl implements Recovery {
         return !recoveryErrors.isEmpty();
     }
 
-    public synchronized List getRecoveryErrors() {
+    public synchronized List<Exception> getRecoveryErrors() {
         return Collections.unmodifiableList(recoveryErrors);
     }
 
@@ -203,8 +200,8 @@ public class RecoveryImpl implements Recovery {
 //    public boolean remoteRecoveryComplete() {
 //    }
 
-    public synchronized Map getExternalXids() {
-        return new HashMap(externalXids);
+    public synchronized Map<Xid, TransactionImpl> getExternalXids() {
+        return new HashMap<Xid, TransactionImpl>(externalXids);
     }
 
     private static class ByteArrayWrapper {
@@ -215,8 +212,8 @@ public class RecoveryImpl implements Recovery {
             assert bytes != null;
             this.bytes = bytes;
             int hash = 0;
-            for (int i = 0; i < bytes.length; i++) {
-                hash += 37 * bytes[i];
+            for (byte aByte : bytes) {
+                hash += 37 * aByte;
             }
             hashCode = hash;
         }
@@ -234,11 +231,13 @@ public class RecoveryImpl implements Recovery {
     }
 
     private static class ExternalTransaction extends TransactionImpl {
-        private Set resourceNames;
+        private final Set<String> resourceNames = new HashSet<String>();
 
-        public ExternalTransaction(Xid xid, TransactionLog txLog, Set resourceNames) {
+        public ExternalTransaction(Xid xid, TransactionLog txLog, Set<TransactionBranchInfo> resourceNames) {
             super(xid, txLog);
-            this.resourceNames = resourceNames;
+            for (TransactionBranchInfo info: resourceNames) {
+                this.resourceNames.add(info.getResourceName());
+            }
         }
 
         public boolean hasName(String name) {

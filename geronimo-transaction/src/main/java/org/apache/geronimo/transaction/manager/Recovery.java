@@ -47,13 +47,13 @@ public interface Recovery {
     //hard to implement.. needs ExternalTransaction to have a reference to externalXids.
 //    boolean remoteRecoveryComplete();
 
-    Map getExternalXids();
+    Map<Xid, TransactionImpl> getExternalXids();
 
     public static class XidBranchesPair {
         private final Xid xid;
 
         //set of TransactionBranchInfo
-        private final Set branches = new HashSet();
+        private final Set<TransactionBranchInfo> branches = new HashSet<TransactionBranchInfo>();
 
         private final Object mark;
 
@@ -66,7 +66,7 @@ public interface Recovery {
             return xid;
         }
 
-        public Set getBranches() {
+        public Set<TransactionBranchInfo> getBranches() {
             return branches;
         }
 
