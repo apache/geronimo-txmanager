@@ -372,7 +372,6 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
                     ConnectionInfo killInfo = new ConnectionInfo(managedConnectionInfo);
                     interceptor.internalReturn(killInfo, ConnectionReturnAction.DESTROY);
                 }
-                interceptor.permits.release(killList.size());
             } catch (Throwable t) {
                 log.error("Error occurred during execution of ExpirationMonitor TimerTask", t);
             } finally {
