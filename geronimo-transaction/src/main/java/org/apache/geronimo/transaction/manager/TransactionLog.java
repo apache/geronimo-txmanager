@@ -39,7 +39,7 @@ public interface TransactionLog {
      * @return log mark to use in commit/rollback calls.
      * @throws LogException on error
      */
-    Object prepare(Xid xid, List<TransactionBranchInfo> branches) throws LogException;
+    Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException;
 
     void commit(Xid xid, Object logMark) throws LogException;
 

@@ -241,7 +241,7 @@ public class HOWLLog implements TransactionLog {
     public void begin(Xid xid) throws LogException {
     }
 
-    public Object prepare(Xid xid, List<TransactionBranchInfo> branches) throws LogException {
+    public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
         int branchCount = branches.size();
         byte[][] data = new byte[3 + 2 * branchCount][];
         data[0] = intToBytes(xid.getFormatId());

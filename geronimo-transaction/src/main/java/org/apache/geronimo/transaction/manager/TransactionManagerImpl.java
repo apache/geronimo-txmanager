@@ -54,7 +54,8 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     final Recovery recovery;
     private final Map<String, NamedXAResourceFactory> namedXAResourceFactories = new ConcurrentHashMap<String, NamedXAResourceFactory>();
     private final CopyOnWriteArrayList<TransactionManagerMonitor> transactionAssociationListeners = new CopyOnWriteArrayList<TransactionManagerMonitor>();
-    private List<Exception> recoveryErrors = new ArrayList<Exception>();
+    private final List<Exception> recoveryErrors = new ArrayList<Exception>();
+    private final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
     // statistics
     private AtomicLong totalCommits = new AtomicLong(0);
     private AtomicLong totalRollBacks = new AtomicLong(0);
@@ -99,7 +100,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             this.xidFactory = new XidFactoryImpl(DEFAULT_TM_ID);
         }
 
-        recovery = new RecoveryImpl(this.transactionLog, this.xidFactory);
+        recovery = new RecoveryImpl(this.transactionLog, this.xidFactory, retryScheduler);
         recovery.recoverLog();
     }
 
@@ -155,7 +156,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getStatus() != Status.STATUS_NO_TRANSACTION) {
             throw new NotSupportedException("Nested Transactions are not supported");
         }
-        TransactionImpl tx = new TransactionImpl(xidFactory, transactionLog, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        TransactionImpl tx = new TransactionImpl(xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
 //        timeoutTimer.schedule(tx, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
         try {
             associate(tx);
@@ -273,7 +274,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds < 0) {
             throw new SystemException("transaction timeout must be positive or 0 to reset to default");
         }
-        return new TransactionImpl(xid, xidFactory, transactionLog, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        return new TransactionImpl(xid, xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
     }
 
     public void commit(Transaction tx, boolean onePhase) throws XAException {
@@ -349,18 +350,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     public void registerNamedXAResourceFactory(NamedXAResourceFactory namedXAResourceFactory) {
         namedXAResourceFactories.put(namedXAResourceFactory.getName(), namedXAResourceFactory);
-        try {
-            NamedXAResource namedXAResource = namedXAResourceFactory.getNamedXAResource();
-            try {
-                recovery.recoverResourceManager(namedXAResource);
-            } finally {
-                namedXAResourceFactory.returnNamedXAResource(namedXAResource);
-            }
-        } catch (XAException e) {
-            recoveryError(e);
-        } catch (SystemException e) {
-            recoveryError(e);
-        }
+        new RecoverTask(retryScheduler, namedXAResourceFactory, recovery, this).run();
     }
 
     public void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName) {

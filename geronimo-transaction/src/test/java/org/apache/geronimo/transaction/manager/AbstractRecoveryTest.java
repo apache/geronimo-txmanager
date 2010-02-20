@@ -38,6 +38,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
     protected TransactionLog txLog;
 
     protected final XidFactory xidFactory = new XidFactoryImpl();
+    protected final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
     private static final String RM1 = "rm1";
     private static final String RM2 = "rm2";
     private static final String RM3 = "rm3";
@@ -55,7 +56,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         addBranch(txInfos, xares2);
         prepareLog(txLog, txInfos);
         prepareForReplay();
-        Recovery recovery = new RecoveryImpl(txLog, xidFactory);
+        Recovery recovery = new RecoveryImpl(txLog, xidFactory, retryScheduler);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
@@ -104,7 +105,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         addBranch(txInfos23, xares3);
         prepareLog(txLog, txInfos23);
         prepareForReplay();
-        Recovery recovery = new RecoveryImpl(txLog, xidFactory);
+        Recovery recovery = new RecoveryImpl(txLog, xidFactory, retryScheduler);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());

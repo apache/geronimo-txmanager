@@ -17,9 +17,6 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -39,7 +36,6 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,24 +51,26 @@ public class TransactionImpl implements Transaction {
     private final XidFactory xidFactory;
     private final Xid xid;
     private final TransactionLog txnLog;
+    private final RetryScheduler retryScheduler;
     private final long timeout;
-    private final List syncList = new ArrayList(5);
-    private final List interposedSyncList = new ArrayList(3);
-    private final LinkedList resourceManagers = new LinkedList();
-    private final IdentityHashMap activeXaResources = new IdentityHashMap(3);
-    private final IdentityHashMap suspendedXaResources = new IdentityHashMap(3);
+    private final List<Synchronization> syncList = new ArrayList<Synchronization>(5);
+    private final List<Synchronization> interposedSyncList = new ArrayList<Synchronization>(3);
+    private final LinkedList<TransactionBranch> resourceManagers = new LinkedList<TransactionBranch>();
+    private final IdentityHashMap<XAResource, TransactionBranch> activeXaResources = new IdentityHashMap<XAResource, TransactionBranch>(3);
+    private final IdentityHashMap<XAResource, TransactionBranch> suspendedXaResources = new IdentityHashMap<XAResource, TransactionBranch>(3);
     private int status = Status.STATUS_NO_TRANSACTION;
     private Object logMark;
 
-    private final Map resources = new HashMap();
+    private final Map<Object, Object> resources = new HashMap<Object, Object>();
 
-    TransactionImpl(XidFactory xidFactory, TransactionLog txnLog, long transactionTimeoutMilliseconds) throws SystemException {
-        this(xidFactory.createXid(), xidFactory, txnLog, transactionTimeoutMilliseconds);
+    TransactionImpl(XidFactory xidFactory, TransactionLog txnLog, RetryScheduler retryScheduler, long transactionTimeoutMilliseconds) throws SystemException {
+        this(xidFactory.createXid(), xidFactory, txnLog, retryScheduler, transactionTimeoutMilliseconds);
     }
 
-    TransactionImpl(Xid xid, XidFactory xidFactory, TransactionLog txnLog, long transactionTimeoutMilliseconds) throws SystemException {
+    TransactionImpl(Xid xid, XidFactory xidFactory, TransactionLog txnLog, RetryScheduler retryScheduler, long transactionTimeoutMilliseconds) throws SystemException {
         this.xidFactory = xidFactory;
         this.txnLog = txnLog;
+        this.retryScheduler = retryScheduler;
         this.xid = xid;
         this.timeout = transactionTimeoutMilliseconds + TransactionTimer.getCurrentTime();
         try {
@@ -87,10 +85,11 @@ public class TransactionImpl implements Transaction {
     }
 
     //reconstruct a tx for an external tx found in recovery
-    public TransactionImpl(Xid xid, TransactionLog txLog) {
+    public TransactionImpl(Xid xid, TransactionLog txLog, RetryScheduler retryScheduler) {
         this.xidFactory = null;
         this.txnLog = txLog;
         this.xid = xid;
+        this.retryScheduler = retryScheduler;
         status = Status.STATUS_PREPARED;
         //TODO is this a good idea?
         this.timeout = Long.MAX_VALUE;
@@ -551,7 +550,7 @@ public class TransactionImpl implements Transaction {
         endResources(suspendedXaResources);
     }
 
-    private void endResources(IdentityHashMap resourceMap) {
+    private void endResources(IdentityHashMap<XAResource, TransactionBranch> resourceMap) {
         while (true) {
             XAResource xaRes;
             TransactionBranch manager;
@@ -578,7 +577,7 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private void rollbackResources(List rms) throws SystemException {
+    private void rollbackResources(List<TransactionBranch> rms) throws SystemException {
         SystemException cause = null;
         synchronized (this) {
             status = Status.STATUS_ROLLING_BACK;
@@ -618,7 +617,7 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private void rollbackResourcesDuringCommit(List rms, boolean everRb) throws HeuristicMixedException, RollbackException, SystemException {
+    private void rollbackResourcesDuringCommit(List<TransactionBranch> rms, boolean everRb) throws HeuristicMixedException, RollbackException, SystemException {
         XAException cause = null;
         boolean everRolledback = everRb;
         synchronized (this) {
@@ -746,71 +745,91 @@ public class TransactionImpl implements Transaction {
         }
     }
     
-    private void commitResources(List rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
-        XAException cause = null;
-        boolean evercommit = false;
+    private void commitResources(List<TransactionBranch> rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
+        //TODO there's some logic removed about dealing with a heuristic rollback on the first resource.
+        CommitTask commitTask = new CommitTask(xid, rms, logMark, retryScheduler, txnLog);
         synchronized (this) {
             status = Status.STATUS_COMMITTING;
         }
-        try {
-            for (Iterator i = rms.iterator(); i.hasNext();) {
-                TransactionBranch manager = (TransactionBranch) i.next();
-                try {
-                    manager.getCommitter().commit(manager.getBranchId(), false);
-                    evercommit = true;
-                } catch (XAException e) {
-                    log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
-                    
-                    if (e.errorCode == XAException.XA_HEURRB) {
-                        log.info("Transaction has been heuristically rolled back");
-                        cause = e;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_HEURMIX) {
-                        log.info("Transaction has been heuristically committed and rolled back");
-                        cause = e;
-                        evercommit = true;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_HEURCOM) {
-                        // let's not throw an exception as the transaction has been committed
-                        log.info("Transaction has been heuristically committed");
-                        evercommit = true;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else {
-                        cause = e;
-                    }
-                }
-            }
-        } catch (XAException e) {
-            if (e.errorCode == XAException.XAER_NOTA) {
-                // NOTA in response to forget, means the resource already forgot the transaction
-                // ignore
-            } else {
-                throw (SystemException) new SystemException("Error during two phase commit").initCause(e);
-            }
-        }
-        //if all resources were read only, we didn't write a prepare record.
-        if (!rms.isEmpty()) {
-            try {
-                txnLog.commit(xid, logMark);
-            } catch (LogException e) {
-                log.error("Unexpected exception logging commit completion for xid " + xid, e);
-                throw (SystemException) new SystemException("Unexpected error logging commit completion for xid " + xid).initCause(e);
-            }
-        }
+        commitTask.run();
         synchronized (this) {
-            status = Status.STATUS_COMMITTED;
+            status = commitTask.getStatus();
         }
+        XAException cause = commitTask.getCause();
         if (cause != null) {
-            if (cause.errorCode == XAException.XA_HEURRB && !evercommit) {
+            if (cause.errorCode == XAException.XA_HEURRB) {
                 throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
-            } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
+            } else if (cause.errorCode == XAException.XA_HEURRB) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
             } else {
                 throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
-            } 
+            }
         }
+
+
+//        XAException cause = null;
+//        boolean evercommit = false;
+//        try {
+//            for (Iterator i = rms.iterator(); i.hasNext();) {
+//                TransactionBranch manager = (TransactionBranch) i.next();
+//                try {
+//                    manager.getCommitter().commit(manager.getBranchId(), false);
+//                    evercommit = true;
+//                } catch (XAException e) {
+//                    log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
+//
+//                    if (e.errorCode == XAException.XA_HEURRB) {
+//                        log.info("Transaction has been heuristically rolled back");
+//                        cause = e;
+//                        manager.getCommitter().forget(manager.getBranchId());
+//                    } else if (e.errorCode == XAException.XA_HEURMIX) {
+//                        log.info("Transaction has been heuristically committed and rolled back");
+//                        cause = e;
+//                        evercommit = true;
+//                        manager.getCommitter().forget(manager.getBranchId());
+//                    } else if (e.errorCode == XAException.XA_HEURCOM) {
+//                        // let's not throw an exception as the transaction has been committed
+//                        log.info("Transaction has been heuristically committed");
+//                        evercommit = true;
+//                        manager.getCommitter().forget(manager.getBranchId());
+//                    } else {
+//                        cause = e;
+//                    }
+//                }
+//            }
+//        } catch (XAException e) {
+//            if (e.errorCode == XAException.XAER_NOTA) {
+//                // NOTA in response to forget, means the resource already forgot the transaction
+//                // ignore
+//            } else {
+//                throw (SystemException) new SystemException("Error during two phase commit").initCause(e);
+//            }
+//        }
+//        //if all resources were read only, we didn't write a prepare record.
+//        if (!rms.isEmpty()) {
+//            try {
+//                txnLog.commit(xid, logMark);
+//            } catch (LogException e) {
+//                log.error("Unexpected exception logging commit completion for xid " + xid, e);
+//                throw (SystemException) new SystemException("Unexpected error logging commit completion for xid " + xid).initCause(e);
+//            }
+//        }
+//        synchronized (this) {
+//            status = Status.STATUS_COMMITTED;
+//        }
+//        if (cause != null) {
+//            if (cause.errorCode == XAException.XA_HEURRB && !evercommit) {
+//                throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
+//            } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
+//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+//            } else if (cause.errorCode == XAException.XA_HEURMIX) {
+//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
+//            } else {
+//                throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
+//            }
+//        }
     }
 
     private static String getStateString(int status) {
@@ -857,7 +876,7 @@ public class TransactionImpl implements Transaction {
         return manager;
     }
 
-    private static class TransactionBranch implements TransactionBranchInfo {
+    static class TransactionBranch implements TransactionBranchInfo {
         private final XAResource committer;
         private final Xid branchId;
 

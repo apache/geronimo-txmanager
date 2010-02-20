@@ -24,6 +24,7 @@ import java.util.List;
 import javax.transaction.xa.Xid;
 
 import org.apache.geronimo.transaction.manager.LogException;
+import org.apache.geronimo.transaction.manager.TransactionBranchInfo;
 import org.apache.geronimo.transaction.manager.TransactionLog;
 import org.apache.geronimo.transaction.manager.XidFactory;
 
@@ -38,7 +39,7 @@ public class UnrecoverableLog implements TransactionLog {
     public void begin(Xid xid) throws LogException {
     }
 
-    public Object prepare(Xid xid, List branches) throws LogException {
+    public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
         return null;
     }
 

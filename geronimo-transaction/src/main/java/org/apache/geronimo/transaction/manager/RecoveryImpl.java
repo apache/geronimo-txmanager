@@ -50,6 +50,7 @@ public class RecoveryImpl implements Recovery {
 
     private final TransactionLog txLog;
     private final XidFactory xidFactory;
+    private final RetryScheduler retryScheduler;
 
     private final Map<Xid, TransactionImpl> externalXids = new HashMap<Xid, TransactionImpl>();
     private final Map<ByteArrayWrapper, XidBranchesPair> ourXids = new HashMap<ByteArrayWrapper, XidBranchesPair>();
@@ -58,9 +59,10 @@ public class RecoveryImpl implements Recovery {
 
     private final List<Exception> recoveryErrors = new ArrayList<Exception>();
 
-    public RecoveryImpl(final TransactionLog txLog, final XidFactory xidFactory) {
+    public RecoveryImpl(final TransactionLog txLog, final XidFactory xidFactory, RetryScheduler retryScheduler) {
         this.txLog = txLog;
         this.xidFactory = xidFactory;
+        this.retryScheduler = retryScheduler;
     }
 
     public synchronized void recoverLog() throws XAException {
@@ -84,7 +86,7 @@ public class RecoveryImpl implements Recovery {
                     transactionsForName.add(xidBranchesPair);
                 }
             } else {
-                TransactionImpl externalTx = new ExternalTransaction(xid, txLog, xidBranchesPair.getBranches());
+                TransactionImpl externalTx = new ExternalTransaction(xid, txLog, retryScheduler, xidBranchesPair.getBranches());
                 externalXids.put(xid, externalTx);
                 externalGlobalIdMap.put(xid.getGlobalTransactionId(), externalTx);
             }
@@ -233,8 +235,8 @@ public class RecoveryImpl implements Recovery {
     private static class ExternalTransaction extends TransactionImpl {
         private final Set<String> resourceNames = new HashSet<String>();
 
-        public ExternalTransaction(Xid xid, TransactionLog txLog, Set<TransactionBranchInfo> resourceNames) {
-            super(xid, txLog);
+        public ExternalTransaction(Xid xid, TransactionLog txLog, RetryScheduler retryScheduler, Set<TransactionBranchInfo> resourceNames) {
+            super(xid, txLog, retryScheduler);
             for (TransactionBranchInfo info: resourceNames) {
                 this.resourceNames.add(info.getResourceName());
             }

@@ -103,7 +103,7 @@ public class XATransactionTester {
             XATransactionTester.this.xid = xid;
         }
 
-        public Object prepare(Xid xid, List<TransactionBranchInfo> branches) throws LogException {
+        public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
             return new Object();
         }
 
