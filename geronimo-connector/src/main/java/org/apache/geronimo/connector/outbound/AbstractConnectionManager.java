@@ -37,11 +37,12 @@ public abstract class AbstractConnectionManager implements ConnectionManagerCont
     private final RecoverableTransactionManager transactionManager;
     private final String name;
 
-    //default constructor for use as endpoint
-//    public AbstractConnectionManager() {
-//        interceptors = null;
-//        transactionManager = null;
-//    }
+    //default constructor to support externalizable subclasses
+    public AbstractConnectionManager() {
+        interceptors = null;
+        transactionManager = null;
+        this.name = null;
+    }
 
     public AbstractConnectionManager(Interceptors interceptors, RecoverableTransactionManager transactionManager, String name) {
         this.interceptors = interceptors;

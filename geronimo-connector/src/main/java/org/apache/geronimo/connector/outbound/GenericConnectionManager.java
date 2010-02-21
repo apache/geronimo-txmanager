@@ -36,10 +36,10 @@ import org.slf4j.LoggerFactory;
 public class GenericConnectionManager extends AbstractConnectionManager {
     protected static final Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
 
-    //default constructor for use as endpoint
-//    public GenericConnectionManager() {
-//        super();
-//    }
+    //default constructor to support externalizable subclasses
+    public GenericConnectionManager() {
+        super();
+    }
 
     /**
      *
