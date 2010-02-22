@@ -32,8 +32,22 @@ public class ExponentialtIntervalRetryScheduler implements RetryScheduler{
 
     private final int base = 2;
 
-    public void retry(TimerTask task, int count) {
+    public void retry(Runnable task, int count) {
         long interval = Math.round(Math.pow(base, count)) * 1000;
-        timer.schedule(task, interval);
+        timer.schedule(new TaskWrapper(task), interval);
+    }
+
+    private static class TaskWrapper extends TimerTask {
+
+        private final Runnable delegate;
+
+        private TaskWrapper(Runnable delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() {
+            delegate.run();
+        }
     }
 }

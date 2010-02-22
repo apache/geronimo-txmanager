@@ -28,7 +28,7 @@ import javax.transaction.xa.XAException;
 /**
  * @version $Rev$ $Date$
  */
-public class RecoverTask extends TimerTask {
+public class RecoverTask implements Runnable {
 
     private final RetryScheduler retryScheduler;
     private final NamedXAResourceFactory namedXAResourceFactory;

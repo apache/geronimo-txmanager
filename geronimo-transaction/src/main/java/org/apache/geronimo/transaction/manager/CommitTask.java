@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @version $Rev$ $Date$
  */
-public class CommitTask extends TimerTask {
+public class CommitTask implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(CommitTask.class);
     private final Xid xid;
     private final List<TransactionBranch> rms;

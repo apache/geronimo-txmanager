@@ -27,5 +27,5 @@ import java.util.TimerTask;
  */
 public interface RetryScheduler {
 
-    void retry(TimerTask task, int count);
+    void retry(Runnable task, int count);
 }
