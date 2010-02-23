@@ -344,7 +344,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     //Recovery
     public void recoveryError(Exception e) {
-        recoveryLog.error("Recovery error", e);
+        recoveryLog.error("Recovery error: {}", e.getMessage());
         recoveryErrors.add(e);
     }
 
