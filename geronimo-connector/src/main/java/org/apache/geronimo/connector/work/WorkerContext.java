@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.resource.NotSupportedException;
 import javax.resource.spi.work.ExecutionContext;
 import javax.resource.spi.work.WorkContext;
+import javax.resource.spi.work.WorkContextErrorCodes;
 import javax.resource.spi.work.WorkContextProvider;
 import javax.resource.spi.work.TransactionContext;
 import javax.resource.spi.work.Work;
@@ -331,7 +332,7 @@ public class WorkerContext implements Work {
                     }
                 }
                 if (!found) {
-                    throw new WorkCompletedException("Duplicate or unhandled WorkContext: " + workContext);
+                    throw new WorkCompletedException("Duplicate or unhandled WorkContext: " + workContext, WorkContextErrorCodes.UNSUPPORTED_CONTEXT_TYPE);
                 }
             }
             for (Iterator<WorkContextHandler> it = workContextHandlers.iterator(); it.hasNext();) {
