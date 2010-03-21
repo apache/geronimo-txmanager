@@ -23,6 +23,7 @@ import javax.resource.spi.XATerminator;
 import javax.resource.spi.work.WorkManager;
 import javax.resource.spi.work.WorkContext;
 import javax.transaction.TransactionSynchronizationRegistry;
+import org.apache.geronimo.connector.work.GeronimoWorkManager;
 
 /**
  * GBean BootstrapContext implementation that refers to externally configured WorkManager
@@ -31,8 +32,9 @@ import javax.transaction.TransactionSynchronizationRegistry;
  * @version $Rev$ $Date$
  */
 public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapContext {
-    private final WorkManager workManager;
+    private final GeronimoWorkManager workManager;
     private final XATerminator xATerminator;
+    private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
     /**
      * Default constructor for use as a GBean Endpoint.
@@ -40,16 +42,19 @@ public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapCon
     public GeronimoBootstrapContext() {
         workManager = null;
         xATerminator = null;
+        transactionSynchronizationRegistry = null;
     }
 
     /**
      * Normal constructor for use as a GBean.
      * @param workManager
      * @param xaTerminator
+     * @param transactionSynchronizationRegistry
      */
-    public GeronimoBootstrapContext(WorkManager workManager, XATerminator xaTerminator) {
+    public GeronimoBootstrapContext(GeronimoWorkManager workManager, XATerminator xaTerminator, TransactionSynchronizationRegistry transactionSynchronizationRegistry) {
         this.workManager = workManager;
         this.xATerminator = xaTerminator;
+        this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
     }
 
 
@@ -75,11 +80,11 @@ public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapCon
     }
 
     public TransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
-        return null;
+        return transactionSynchronizationRegistry;
     }
 
     public boolean isContextSupported(Class<? extends WorkContext> aClass) {
-        return false;
+        return workManager.isContextSupported(aClass);
     }
 
 }

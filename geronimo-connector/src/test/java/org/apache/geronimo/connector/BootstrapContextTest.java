@@ -99,7 +99,7 @@ public class BootstrapContextTest extends TestCase {
         GeronimoTransactionManager transactionManager = new GeronimoTransactionManager();
         TransactionContextHandler txWorkContextHandler = new TransactionContextHandler(transactionManager);
         GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<WorkContextHandler>singletonList(txWorkContextHandler));
-        GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager);
+        GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager, transactionManager);
         WorkManager wm = context.getWorkManager();
 
         assertSame("Make sure it is the same object", manager, wm);
@@ -112,7 +112,7 @@ public class BootstrapContextTest extends TestCase {
         GeronimoTransactionManager transactionManager = new GeronimoTransactionManager();
         TransactionContextHandler txWorkContextHandler = new TransactionContextHandler(transactionManager);
         GeronimoWorkManager manager = new GeronimoWorkManager(pool, pool, pool, Collections.<WorkContextHandler>singletonList(txWorkContextHandler));
-        GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager);
+        GeronimoBootstrapContext context = new GeronimoBootstrapContext(manager, transactionManager, transactionManager);
         XATerminator xat = context.getXATerminator();
 
         assertSame("Make sure it is the same object", transactionManager, xat);
@@ -122,7 +122,7 @@ public class BootstrapContextTest extends TestCase {
      * Tests getTimer
      */
     public void testGetTimer() throws Exception {
-        GeronimoBootstrapContext context = new GeronimoBootstrapContext(null, null);
+        GeronimoBootstrapContext context = new GeronimoBootstrapContext(null, null, null);
         Timer t = context.createTimer();
         assertNotNull("Object is not null", t);
     }

@@ -312,9 +312,11 @@ public class WorkerContext implements Work {
                 try {
                     txWorkContext.setTransactionTimeout(executionContext.getTransactionTimeout());
                 } catch (NotSupportedException e) {
-                    throw new WorkRejectedException("Could not read tx timeout");
+                    //not set, continue to not set it.
                 }
+                txWorkContext.setXid(executionContext.getXid());
                 workContexts = Collections.<WorkContext>singletonList(txWorkContext);
+                log.info("Translated ExecutionContext to TransactionContext");
             } else if (adaptee instanceof WorkContextProvider) {
                 workContexts = ((WorkContextProvider) adaptee).getWorkContexts();
             }
@@ -323,21 +325,28 @@ public class WorkerContext implements Work {
                 boolean found = false;
                 for (Iterator<WorkContextHandler> it = workContextHandlers.iterator(); it.hasNext();) {
                     WorkContextHandler workContextHandler = it.next();
-                    //TODO is this the right way around?
-                    if (workContext.getClass().isAssignableFrom(workContextHandler.getHandledClass())) {
+                    log.info("sorting WorkContextHandler: " + workContextHandler + " for work context: " + workContext);
+                    if (workContextHandler.supports(workContext.getClass())) {
                         it.remove();
+                        log.info("adding sorted WorkContextHandler: " + workContextHandler);
                         sortedHandlers.add(workContextHandler);
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    throw new WorkCompletedException("Duplicate or unhandled WorkContext: " + workContext, WorkContextErrorCodes.UNSUPPORTED_CONTEXT_TYPE);
+                    for (WorkContextHandler workContextHandler: sortedHandlers) {
+                        if (workContextHandler.supports(workContext.getClass())) {
+                            throw new WorkCompletedException("Duplicate WorkContext: " + workContext, WorkContextErrorCodes.DUPLICATE_CONTEXTS);
+                        }
+                    }
+                    throw new WorkCompletedException("Unhandled WorkContext: " + workContext, WorkContextErrorCodes.UNSUPPORTED_CONTEXT_TYPE);
                 }
             }
             for (Iterator<WorkContextHandler> it = workContextHandlers.iterator(); it.hasNext();) {
                 WorkContextHandler workContextHandler = it.next();
                 if (!workContextHandler.required()) {
+                    log.info("Removing non-required WorkContextHandler with no context: " + workContextHandler);
                     it.remove();
                 }
             }
@@ -345,9 +354,12 @@ public class WorkerContext implements Work {
 
             int i = 0;
             for (WorkContext workContext : workContexts) {
-                sortedHandlers.get(i++).before(workContext);
+                WorkContextHandler contextHandler = sortedHandlers.get(i++);
+                log.info("calling before on WorkContextHandler: " + contextHandler + " with workContext: " + workContext);
+                contextHandler.before(workContext);
             }
             for (WorkContextHandler workContextHandler: workContextHandlers) {
+                log.info("calling before on WorkContextHandler: " + workContextHandler + " with null workContext");
                 workContextHandler.before(null);
             }
             try {
@@ -355,9 +367,12 @@ public class WorkerContext implements Work {
             } finally {
                 int j = 0;
                 for (WorkContext workContext : workContexts) {
-                    sortedHandlers.get(j++).after(workContext);
+                    WorkContextHandler contextHandler = sortedHandlers.get(j++);
+                    log.info("calling after on WorkContextHandler: " + contextHandler + " with workContext: " + workContext);
+                    contextHandler.after(workContext);
                 }
                 for (WorkContextHandler workContextHandler: workContextHandlers) {
+                    log.info("calling after on WorkContextHandler: " + workContextHandler + " with null workContext");
                     workContextHandler.after(null);
                 }
             }

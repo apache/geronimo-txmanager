@@ -22,6 +22,7 @@ package org.apache.geronimo.connector.work;
 
 import javax.resource.spi.work.TransactionContext;
 import javax.resource.spi.work.WorkCompletedException;
+import javax.resource.spi.work.WorkContext;
 import javax.transaction.xa.XAException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.SystemException;
@@ -70,8 +71,8 @@ public class TransactionContextHandler implements WorkContextHandler<Transaction
         }
     }
 
-    public Class<TransactionContext> getHandledClass() {
-        return TransactionContext.class;
+    public boolean supports(Class<? extends WorkContext> clazz) {
+        return TransactionContext.class.isAssignableFrom(clazz);
     }
 
     public boolean required() {

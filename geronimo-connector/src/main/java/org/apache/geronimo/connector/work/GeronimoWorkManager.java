@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import javax.resource.spi.work.ExecutionContext;
 import javax.resource.spi.work.Work;
 import javax.resource.spi.work.WorkCompletedException;
+import javax.resource.spi.work.WorkContext;
 import javax.resource.spi.work.WorkException;
 import javax.resource.spi.work.WorkListener;
 import javax.resource.spi.work.WorkManager;
@@ -205,6 +206,15 @@ public class GeronimoWorkManager implements WorkManager {
             wcj.setErrorCode(WorkException.INTERNAL);
             throw wcj;
         }
+    }
+
+    public boolean isContextSupported(Class<? extends WorkContext> aClass) {
+        for (WorkContextHandler workContextHandler: workContextHandlers) {
+            if (workContextHandler.supports(aClass)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

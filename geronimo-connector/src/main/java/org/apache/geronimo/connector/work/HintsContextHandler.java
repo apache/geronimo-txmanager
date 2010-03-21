@@ -20,20 +20,27 @@
 
 package org.apache.geronimo.connector.work;
 
-import javax.resource.spi.work.WorkContext;
+import javax.resource.spi.work.HintsContext;
 import javax.resource.spi.work.WorkCompletedException;
+import javax.resource.spi.work.WorkContext;
 
 /**
  * @version $Rev$ $Date$
  */
-public interface WorkContextHandler<E extends WorkContext> {
+public class HintsContextHandler implements WorkContextHandler<HintsContext> {
 
-    void before(E workContext) throws WorkCompletedException;
+    public void before(HintsContext workContext) throws WorkCompletedException {
+    }
 
-    void after(E workContext) throws WorkCompletedException;
+    public void after(HintsContext workContext) throws WorkCompletedException {
+    }
 
-    boolean supports(Class<? extends WorkContext> clazz); 
+    public boolean supports(Class<? extends WorkContext> clazz) {
+        return HintsContext.class.isAssignableFrom(clazz);
+    }
 
-    boolean required();
+    public boolean required() {
+        return false;
+    }
 
 }
