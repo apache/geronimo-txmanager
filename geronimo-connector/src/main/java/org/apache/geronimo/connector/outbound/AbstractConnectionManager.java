@@ -22,43 +22,47 @@ import javax.resource.spi.ConnectionManager;
 import javax.resource.spi.ConnectionRequestInfo;
 import javax.resource.spi.LazyAssociatableConnectionManager;
 import javax.resource.spi.ManagedConnectionFactory;
-import javax.transaction.SystemException;
 
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PoolingSupport;
-import org.apache.geronimo.transaction.manager.NamedXAResource;
-import org.apache.geronimo.transaction.manager.NamedXAResourceFactory;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
 
 /**
  * @version $Rev$ $Date$
  */
 public abstract class AbstractConnectionManager implements ConnectionManagerContainer, ConnectionManager, LazyAssociatableConnectionManager, PoolingAttributes {
-    protected final Interceptors interceptors;
-    private final RecoverableTransactionManager transactionManager;
+    protected transient final Interceptors interceptors;
+    private transient final RecoverableTransactionManager transactionManager;
+    private transient final ManagedConnectionFactory managedConnectionFactory;
     private final String name;
 
     //default constructor to support externalizable subclasses
     public AbstractConnectionManager() {
         interceptors = null;
         transactionManager = null;
+        managedConnectionFactory = null;
         this.name = null;
     }
 
-    public AbstractConnectionManager(Interceptors interceptors, RecoverableTransactionManager transactionManager, String name) {
+    public AbstractConnectionManager(Interceptors interceptors, RecoverableTransactionManager transactionManager, ManagedConnectionFactory mcf, String name) {
         this.interceptors = interceptors;
         this.transactionManager = transactionManager;
+        this.managedConnectionFactory = mcf;
         this.name = name;
     }
 
-    public Object createConnectionFactory(ManagedConnectionFactory mcf) throws ResourceException {
-        return mcf.createConnectionFactory(this);
+    public Object createConnectionFactory() throws ResourceException {
+        return managedConnectionFactory.createConnectionFactory(this);
     }
 
     protected ConnectionManager getConnectionManager() {
         return this;
     }
 
-    public void doRecovery(ManagedConnectionFactory managedConnectionFactory) {
+    public ManagedConnectionFactory getManagedConnectionFactory() {
+        return managedConnectionFactory;
+    }
+
+    public void doRecovery() {
         if (!getIsRecoverable()) {
             return;
         }
@@ -186,12 +190,16 @@ public abstract class AbstractConnectionManager implements ConnectionManagerCont
     }
 
     public void doStop() throws Exception {
-        transactionManager.unregisterNamedXAResourceFactory(name);
+        if (transactionManager != null) {
+            transactionManager.unregisterNamedXAResourceFactory(name);
+        }
         interceptors.getStack().destroy();
     }
 
     public void doFail() {
-        transactionManager.unregisterNamedXAResourceFactory(name);
+        if (transactionManager != null) {
+            transactionManager.unregisterNamedXAResourceFactory(name);
+        }
         interceptors.getStack().destroy();
     }
 }

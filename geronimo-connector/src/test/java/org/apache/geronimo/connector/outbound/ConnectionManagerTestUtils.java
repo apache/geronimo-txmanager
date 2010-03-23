@@ -113,9 +113,10 @@ public class ConnectionManagerTestUtils extends TestCase implements DefaultInter
                 poolingSupport,
                 subjectSource, connectionTrackingCoordinator,
                 this.transactionManager,
+                mockManagedConnectionFactory,
                 name,
                 classLoader);
-        connectionFactory = (MockConnectionFactory) connectionManagerDeployment.createConnectionFactory(mockManagedConnectionFactory);
+        connectionFactory = (MockConnectionFactory) connectionManagerDeployment.createConnectionFactory();
         connectorInstanceContext = new ConnectorInstanceContextImpl(unshareableResources, applicationManagedSecurityResources);
         defaultComponentInterceptor = new DefaultComponentInterceptor(this, connectionTrackingCoordinator);
     }

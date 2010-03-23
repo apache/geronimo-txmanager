@@ -27,8 +27,8 @@ import javax.resource.spi.ManagedConnectionFactory;
  */
 public interface ConnectionManagerContainer {
 
-    Object createConnectionFactory(ManagedConnectionFactory mcf) throws ResourceException;
+    Object createConnectionFactory() throws ResourceException;
 
-    void doRecovery(ManagedConnectionFactory managedConnectionFactory);
+    void doRecovery();
 
 }

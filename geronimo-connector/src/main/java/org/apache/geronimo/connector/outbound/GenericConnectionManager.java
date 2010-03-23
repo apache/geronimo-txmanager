@@ -17,11 +17,15 @@
 
 package org.apache.geronimo.connector.outbound;
 
+import javax.resource.spi.ManagedConnectionFactory;
 import javax.transaction.TransactionManager;
 
+import org.apache.geronimo.connector.outbound.connectionmanagerconfig.LocalTransactions;
+import org.apache.geronimo.connector.outbound.connectionmanagerconfig.NoTransactions;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PartitionedPool;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PoolingSupport;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.TransactionSupport;
+import org.apache.geronimo.connector.outbound.connectionmanagerconfig.XATransactions;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
 import org.slf4j.Logger;
@@ -48,6 +52,7 @@ public class GenericConnectionManager extends AbstractConnectionManager {
      * @param subjectSource If not null, use container managed security, getting the Subject from the SubjectSource
      * @param connectionTracker tracks connections between calls as needed
      * @param transactionManager transaction manager
+     * @param mcf
      * @param name name
      * @param classLoader classloader this component is running in.
      */
@@ -56,9 +61,10 @@ public class GenericConnectionManager extends AbstractConnectionManager {
                                     SubjectSource subjectSource,
                                     ConnectionTracker connectionTracker,
                                     RecoverableTransactionManager transactionManager,
+                                    ManagedConnectionFactory mcf,
                                     String name,
                                     ClassLoader classLoader) {
-        super(new InterceptorsImpl(transactionSupport, pooling, subjectSource, name, connectionTracker, transactionManager, classLoader), transactionManager, name);
+        super(new InterceptorsImpl(transactionSupport, pooling, subjectSource, name, connectionTracker, transactionManager, mcf, classLoader), transactionManager, mcf, name);
     }
 
     private static class InterceptorsImpl implements AbstractConnectionManager.Interceptors {
@@ -86,10 +92,34 @@ public class GenericConnectionManager extends AbstractConnectionManager {
                                 String name,
                                 ConnectionTracker connectionTracker,
                                 TransactionManager transactionManager,
-                                ClassLoader classLoader) {
+                                ManagedConnectionFactory mcf, ClassLoader classLoader) {
             //check for consistency between attributes
             if (subjectSource == null && pooling instanceof PartitionedPool && ((PartitionedPool) pooling).isPartitionBySubject()) {
                 throw new IllegalStateException("To use Subject in pooling, you need a SecurityDomain");
+            }
+
+            if (mcf == null) {
+                throw new NullPointerException("No ManagedConnectionFactory supplied for " + name);
+            }
+            if (mcf instanceof javax.resource.spi.TransactionSupport) {
+                javax.resource.spi.TransactionSupport txSupport = (javax.resource.spi.TransactionSupport)mcf;
+                javax.resource.spi.TransactionSupport.TransactionSupportLevel txSupportLevel = txSupport.getTransactionSupport();
+                log.info("Runtime TransactionSupport level: " + txSupportLevel);
+                if (txSupportLevel != null) {
+                    if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.NoTransaction) {
+                        transactionSupport = NoTransactions.INSTANCE;
+                    } else if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.LocalTransaction) {
+                        if (transactionSupport != NoTransactions.INSTANCE) {
+                            transactionSupport = LocalTransactions.INSTANCE;
+                        }
+                    } else {
+                        if (transactionSupport != NoTransactions.INSTANCE && transactionSupport != LocalTransactions.INSTANCE) {
+                            transactionSupport = new XATransactions(true, false);
+                        }
+                    }
+                }
+            } else {
+                log.info("No runtime TransactionSupport");
             }
 
             //Set up the interceptor stack
