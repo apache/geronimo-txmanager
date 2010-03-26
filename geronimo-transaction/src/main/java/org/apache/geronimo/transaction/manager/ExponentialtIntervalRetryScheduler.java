@@ -20,15 +20,34 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.TransactionManager;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * @version $Rev$ $Date$
  */
-public interface RecoverableTransactionManager extends TransactionManager {
-    void recoveryError(Exception e);
+public class ExponentialtIntervalRetryScheduler implements RetryScheduler{
 
-    void registerNamedXAResourceFactory(NamedXAResourceFactory namedXAResourceFactory);
+    private final Timer timer = new Timer();
 
-    void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName);
+    private final int base = 2;
+
+    public void retry(Runnable task, int count) {
+        long interval = Math.round(Math.pow(base, count)) * 1000;
+        timer.schedule(new TaskWrapper(task), interval);
+    }
+
+    private static class TaskWrapper extends TimerTask {
+
+        private final Runnable delegate;
+
+        private TaskWrapper(Runnable delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() {
+            delegate.run();
+        }
+    }
 }

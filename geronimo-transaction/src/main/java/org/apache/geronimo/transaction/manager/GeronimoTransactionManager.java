@@ -30,6 +30,8 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 /**
+ * Adds implementations of XATerminator and XAWork interfaces to basic TransactionManagerImpl
+ *
  * @version $Rev$ $Date$
  */
 public class GeronimoTransactionManager extends TransactionManagerImpl implements XATerminator, XAWork {
@@ -195,7 +197,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
                 throw new XAException("No imported transaction for xid: " + xid);
             }
             if (importedTransaction != getTransaction()) {
-                throw new XAException("Imported transaction is not associated with the curren thread xid: " + xid);
+                throw new XAException("Imported transaction is not associated with the current thread xid: " + xid);
             }
             suspend();
         }

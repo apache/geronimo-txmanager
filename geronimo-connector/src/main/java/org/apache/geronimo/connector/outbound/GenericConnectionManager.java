@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class GenericConnectionManager extends AbstractConnectionManager {
     protected static final Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
 
-    //default constructor for use as endpoint
+    //default constructor to support externalizable subclasses
     public GenericConnectionManager() {
         super();
     }
@@ -58,7 +58,7 @@ public class GenericConnectionManager extends AbstractConnectionManager {
                                     RecoverableTransactionManager transactionManager,
                                     String name,
                                     ClassLoader classLoader) {
-        super(new InterceptorsImpl(transactionSupport, pooling, subjectSource, name, connectionTracker, transactionManager, classLoader), transactionManager);
+        super(new InterceptorsImpl(transactionSupport, pooling, subjectSource, name, connectionTracker, transactionManager, classLoader), transactionManager, name);
     }
 
     private static class InterceptorsImpl implements AbstractConnectionManager.Interceptors {

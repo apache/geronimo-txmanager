@@ -40,7 +40,7 @@ public class MockLog implements TransactionLog {
     public void begin(Xid xid) throws LogException {
     }
 
-    public Object prepare(Xid xid, List branches) throws LogException {
+    public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
         Object mark = new Object();
         Recovery.XidBranchesPair xidBranchesPair = new Recovery.XidBranchesPair(xid, mark);
         xidBranchesPair.getBranches().addAll(branches);

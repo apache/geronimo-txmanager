@@ -20,15 +20,12 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.TransactionManager;
+import java.util.TimerTask;
 
 /**
  * @version $Rev$ $Date$
  */
-public interface RecoverableTransactionManager extends TransactionManager {
-    void recoveryError(Exception e);
+public interface RetryScheduler {
 
-    void registerNamedXAResourceFactory(NamedXAResourceFactory namedXAResourceFactory);
-
-    void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName);
+    void retry(Runnable task, int count);
 }

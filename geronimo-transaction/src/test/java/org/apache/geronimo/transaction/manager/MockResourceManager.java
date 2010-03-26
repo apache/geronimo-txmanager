@@ -36,15 +36,12 @@ public class MockResourceManager {
     private boolean willCommit;
     private Map xids = new HashMap();
 
-    private NamedXAResource resources;
-
     public MockResourceManager(boolean willCommit) {
         this.willCommit = willCommit;
     }
 
     public MockResource getResource(String xaResourceName) {
         MockResource mockResource =  new MockResource(this, xaResourceName);
-        resources = mockResource;
         return mockResource;
     }
 
@@ -69,10 +66,6 @@ public class MockResourceManager {
         if (xids.remove(xid) == null) {
             throw new XAException(XAException.XAER_NOTA);
         }
-    }
-
-    public void doRecovery(RecoverableTransactionManager transactionManager) throws SystemException {
-        transactionManager.recoverResourceManager(resources);
     }
 
 }

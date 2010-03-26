@@ -103,7 +103,7 @@ public class XATransactionTester {
             XATransactionTester.this.xid = xid;
         }
 
-        public Object prepare(Xid xid, List branches) throws LogException {
+        public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
             return new Object();
         }
 
@@ -113,8 +113,8 @@ public class XATransactionTester {
         public void rollback(Xid xid, Object logMark) throws LogException {
         }
 
-        public Collection recover(XidFactory xidFactory) throws LogException {
-            return new ArrayList();
+        public Collection<Recovery.XidBranchesPair> recover(XidFactory xidFactory) throws LogException {
+            return new ArrayList<Recovery.XidBranchesPair>();
         }
 
         public String getXMLStats() {

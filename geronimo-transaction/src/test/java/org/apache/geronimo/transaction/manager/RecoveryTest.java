@@ -36,6 +36,7 @@ import junit.framework.TestCase;
 public class RecoveryTest extends TestCase {
 
     XidFactory xidFactory = new XidFactoryImpl();
+    protected final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
     private final String RM1 = "rm1";
     private final String RM2 = "rm2";
     private final String RM3 = "rm3";
@@ -51,7 +52,7 @@ public class RecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory);
+        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
@@ -71,7 +72,7 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory);
+        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
@@ -137,7 +138,7 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos23, xares2);
         addBranch(txInfos23, xares3);
         prepareLog(mockLog, txInfos23);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory);
+        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());

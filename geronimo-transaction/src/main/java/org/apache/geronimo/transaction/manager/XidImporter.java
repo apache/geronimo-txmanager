@@ -39,5 +39,5 @@ public interface XidImporter {
     int prepare(Transaction tx) throws XAException;
     void rollback(Transaction tx) throws XAException;
 
-    Map getExternalXids();
+    Map<Xid, TransactionImpl> getExternalXids();
 }

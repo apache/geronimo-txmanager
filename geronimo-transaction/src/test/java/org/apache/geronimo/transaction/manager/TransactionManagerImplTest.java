@@ -256,12 +256,19 @@ public class TransactionManagerImplTest extends TestCase {
         tm.prepare(tx);
         //recover
         tm.recovery.recoverLog();
-        rm1.doRecovery(tm);
+        recover(r1_1);
+        recover(r1_2);
         assertTrue(r1_2.isCommitted());
         assertTrue(!r2_2.isCommitted());
-        rm2.doRecovery(tm);
+        recover(r2_1);
+        recover(r2_2);
         assertTrue(r2_2.isCommitted());
         assertTrue(tm.recovery.localRecoveryComplete());
+    }
+
+    private void recover(MockResource mr) {
+        tm.registerNamedXAResourceFactory(mr);
+        tm.unregisterNamedXAResourceFactory(mr.getName());
     }
 
     public void testImportedXidRecovery() throws Exception {
@@ -279,10 +286,12 @@ public class TransactionManagerImplTest extends TestCase {
         tm.prepare(tx);
         //recover
         tm.recovery.recoverLog();
-        rm1.doRecovery(tm);
+        recover(r1_1);
+        recover(r1_2);
         assertTrue(!r1_2.isCommitted());
         assertTrue(!r2_2.isCommitted());
-        rm2.doRecovery(tm);
+        recover(r2_1);
+        recover(r2_2);
         assertTrue(!r2_2.isCommitted());
         //there are no transactions started here, so local recovery is complete
         assertTrue(tm.recovery.localRecoveryComplete());

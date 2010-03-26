@@ -19,7 +19,6 @@ package org.apache.geronimo.transaction.manager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -41,19 +40,22 @@ import org.slf4j.LoggerFactory;
  */
 public class TransactionManagerImpl implements TransactionManager, UserTransaction, TransactionSynchronizationRegistry, XidImporter, MonitorableTransactionManager, RecoverableTransactionManager {
     private static final Logger log = LoggerFactory.getLogger(TransactionManagerImpl.class);
+    private static final Logger recoveryLog = LoggerFactory.getLogger("RecoveryController");
+
     protected static final int DEFAULT_TIMEOUT = 600;
     protected static final byte[] DEFAULT_TM_ID = new byte[] {71,84,77,73,68};
 
     final TransactionLog transactionLog;
     final XidFactory xidFactory;
     private final int defaultTransactionTimeoutMilliseconds;
-    private final ThreadLocal transactionTimeoutMilliseconds = new ThreadLocal();
-    private final ThreadLocal threadTx = new ThreadLocal();
-    private final ConcurrentHashMap associatedTransactions = new ConcurrentHashMap();
-    private static final Logger recoveryLog = LoggerFactory.getLogger("RecoveryController");
+    private final ThreadLocal<Long> transactionTimeoutMilliseconds = new ThreadLocal<Long>();
+    private final ThreadLocal<Transaction> threadTx = new ThreadLocal<Transaction>();
+    private final ConcurrentHashMap<Transaction, Thread> associatedTransactions = new ConcurrentHashMap<Transaction, Thread>();
     final Recovery recovery;
-    private final CopyOnWriteArrayList transactionAssociationListeners = new CopyOnWriteArrayList();
-    private List recoveryErrors = new ArrayList();
+    private final Map<String, NamedXAResourceFactory> namedXAResourceFactories = new ConcurrentHashMap<String, NamedXAResourceFactory>();
+    private final CopyOnWriteArrayList<TransactionManagerMonitor> transactionAssociationListeners = new CopyOnWriteArrayList<TransactionManagerMonitor>();
+    private final List<Exception> recoveryErrors = new ArrayList<Exception>();
+    private final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
     // statistics
     private AtomicLong totalCommits = new AtomicLong(0);
     private AtomicLong totalRollBacks = new AtomicLong(0);
@@ -98,12 +100,12 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             this.xidFactory = new XidFactoryImpl(DEFAULT_TM_ID);
         }
 
-        recovery = new RecoveryImpl(this.transactionLog, this.xidFactory);
+        recovery = new RecoveryImpl(this.transactionLog, this.xidFactory, retryScheduler);
         recovery.recoverLog();
     }
 
     public Transaction getTransaction() {
-        return (Transaction) threadTx.get();
+        return threadTx.get();
     }
 
     private void associate(TransactionImpl tx) throws InvalidTransactionException {
@@ -137,7 +139,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (seconds == 0) {
             transactionTimeoutMilliseconds.set(null);
         } else {
-            transactionTimeoutMilliseconds.set(new Long(seconds * 1000));
+            transactionTimeoutMilliseconds.set((long) seconds * 1000);
         }
     }
 
@@ -154,7 +156,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getStatus() != Status.STATUS_NO_TRANSACTION) {
             throw new NotSupportedException("Nested Transactions are not supported");
         }
-        TransactionImpl tx = new TransactionImpl(xidFactory, transactionLog, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        TransactionImpl tx = new TransactionImpl(xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
 //        timeoutTimer.schedule(tx, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
         try {
             associate(tx);
@@ -226,7 +228,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     /**
      * jta 1.1 method so the jpa implementations can be told to flush their caches.
-     * @param synchronization
+     * @param synchronization interposed synchronization
      */
     public void registerInterposedSynchronization(Synchronization synchronization) {
         TransactionImpl tx = getActiveTransactionImpl();
@@ -272,8 +274,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds < 0) {
             throw new SystemException("transaction timeout must be positive or 0 to reset to default");
         }
-        TransactionImpl tx = new TransactionImpl(xid, xidFactory, transactionLog, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
-        return tx;
+        return new TransactionImpl(xid, xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
     }
 
     public void commit(Transaction tx, boolean onePhase) throws XAException {
@@ -334,9 +335,9 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds != 0) {
             return transactionTimeoutMilliseconds;
         }
-        Long timeout = (Long) this.transactionTimeoutMilliseconds.get();
+        Long timeout = this.transactionTimeoutMilliseconds.get();
         if (timeout != null) {
-            return timeout.longValue();
+            return timeout;
         }
         return defaultTransactionTimeoutMilliseconds;
     }
@@ -347,16 +348,17 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         recoveryErrors.add(e);
     }
 
-    public void recoverResourceManager(NamedXAResource xaResource) {
-        try {
-            recovery.recoverResourceManager(xaResource);
-        } catch (XAException e) {
-            recoveryError(e);
-        }
+    public void registerNamedXAResourceFactory(NamedXAResourceFactory namedXAResourceFactory) {
+        namedXAResourceFactories.put(namedXAResourceFactory.getName(), namedXAResourceFactory);
+        new RecoverTask(retryScheduler, namedXAResourceFactory, recovery, this).run();
     }
 
-    public Map getExternalXids() {
-        return new HashMap(recovery.getExternalXids());
+    public void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName) {
+        namedXAResourceFactories.remove(namedXAResourceFactoryName);
+    }
+
+    public Map<Xid, TransactionImpl> getExternalXids() {
+        return new HashMap<Xid, TransactionImpl>(recovery.getExternalXids());
     }
 
     public void addTransactionAssociationListener(TransactionManagerMonitor listener) {
@@ -368,8 +370,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     protected void fireThreadAssociated(Transaction tx) {
-        for (Iterator iterator = transactionAssociationListeners.iterator(); iterator.hasNext();) {
-            TransactionManagerMonitor listener = (TransactionManagerMonitor) iterator.next();
+        for (TransactionManagerMonitor listener : transactionAssociationListeners) {
             try {
                 listener.threadAssociated(tx);
             } catch (Exception e) {
@@ -379,8 +380,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     protected void fireThreadUnassociated(Transaction tx) {
-        for (Iterator iterator = transactionAssociationListeners.iterator(); iterator.hasNext();) {
-            TransactionManagerMonitor listener = (TransactionManagerMonitor) iterator.next();
+        for (TransactionManagerMonitor listener : transactionAssociationListeners) {
             try {
                 listener.threadUnassociated(tx);
             } catch (Exception e) {
@@ -391,6 +391,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     /**
      * Returns the number of active transactions.
+     * @return the count of active transactions
      */
     public long getActiveCount() {
         return activeCount.longValue();
@@ -398,6 +399,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     /**
      * Return the number of total commits
+     * @return the number of commits since statistics were reset
      */
     public long getTotalCommits() {
         return totalCommits.longValue();
@@ -405,6 +407,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     /**
      * Returns the number of total rollbacks
+     * @return the number of rollbacks since statistics were reset
      */
     public long getTotalRollbacks() {
         return totalRollBacks.longValue();

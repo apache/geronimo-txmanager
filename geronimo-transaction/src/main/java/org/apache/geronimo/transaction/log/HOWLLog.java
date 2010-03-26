@@ -67,7 +67,7 @@ public class HOWLLog implements TransactionLog {
     private final XALogger logger;
     private final Configuration configuration = new Configuration();
     private boolean started = false;
-    private HashMap recovered;
+    private HashMap<Xid, Recovery.XidBranchesPair> recovered;
 
     public HOWLLog(String bufferClassName,
                    int bufferSize,
@@ -219,7 +219,7 @@ public class HOWLLog implements TransactionLog {
         started = true;
         setLogFileDir(logFileDir);
         log.debug("Initiating transaction manager recovery");
-        recovered = new HashMap();
+        recovered = new HashMap<Xid, Recovery.XidBranchesPair>();
 
         logger.open(null);
 
@@ -241,15 +241,14 @@ public class HOWLLog implements TransactionLog {
     public void begin(Xid xid) throws LogException {
     }
 
-    public Object prepare(Xid xid, List branches) throws LogException {
+    public Object prepare(Xid xid, List<? extends TransactionBranchInfo> branches) throws LogException {
         int branchCount = branches.size();
         byte[][] data = new byte[3 + 2 * branchCount][];
         data[0] = intToBytes(xid.getFormatId());
         data[1] = xid.getGlobalTransactionId();
         data[2] = xid.getBranchQualifier();
         int i = 3;
-        for (Iterator iterator = branches.iterator(); iterator.hasNext();) {
-            TransactionBranchInfo transactionBranchInfo = (TransactionBranchInfo) iterator.next();
+        for (TransactionBranchInfo transactionBranchInfo : branches) {
             data[i++] = transactionBranchInfo.getBranchXid().getBranchQualifier();
             data[i++] = transactionBranchInfo.getResourceName().getBytes();
         }
@@ -315,9 +314,9 @@ public class HOWLLog implements TransactionLog {
         }
     }
 
-    public Collection recover(XidFactory xidFactory) throws LogException {
+    public Collection<Recovery.XidBranchesPair> recover(XidFactory xidFactory) throws LogException {
         log.debug("Initiating transaction manager recovery");
-        Map recovered = new HashMap();
+        Map<Xid, Recovery.XidBranchesPair> recovered = new HashMap<Xid, Recovery.XidBranchesPair>();
         ReplayListener replayListener = new GeronimoReplayListener(xidFactory, recovered);
         logger.replayActiveTx(replayListener);
         log.debug("In doubt transactions recovered from log");
@@ -352,9 +351,9 @@ public class HOWLLog implements TransactionLog {
     private class GeronimoReplayListener implements ReplayListener {
 
         private final XidFactory xidFactory;
-        private final Map recoveredTx;
+        private final Map<Xid, Recovery.XidBranchesPair> recoveredTx;
 
-        public GeronimoReplayListener(XidFactory xidFactory, Map recoveredTx) {
+        public GeronimoReplayListener(XidFactory xidFactory, Map<Xid, Recovery.XidBranchesPair> recoveredTx) {
             this.xidFactory = xidFactory;
             this.recoveredTx = recoveredTx;
         }
