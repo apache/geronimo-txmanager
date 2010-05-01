@@ -48,6 +48,7 @@ public class CommitTask implements Runnable {
     private int count = 0;
     private int status;
     private XAException cause;
+    private boolean evercommit;
 
     public CommitTask(Xid xid, List<TransactionBranch> rms, Object logMark, RetryScheduler retryScheduler, TransactionLog txLog) {
         this.xid = xid;
@@ -80,11 +81,13 @@ public class CommitTask implements Runnable {
                         i.remove();
                         log.info("Transaction has been heuristically committed and rolled back");
                         cause = e;
+                        evercommit = true;
                         manager.getCommitter().forget(manager.getBranchId());
                     } else if (e.errorCode == XAException.XA_HEURCOM) {
                         i.remove();
                         // let's not throw an exception as the transaction has been committed
                         log.info("Transaction has been heuristically committed");
+                        evercommit = true;
                         manager.getCommitter().forget(manager.getBranchId());
                     } else if (e.errorCode == XAException.XA_RETRY) {
                         // do nothing, retry later
@@ -117,21 +120,14 @@ public class CommitTask implements Runnable {
         } else {
             retryScheduler.retry(this, count++);
         }
-//        if (cause != null) {
-//            if (cause.errorCode == XAException.XA_HEURRB && !evercommit) {
-//                throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
-//            } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
-//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
-//            } else if (cause.errorCode == XAException.XA_HEURMIX) {
-//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
-//            } else {
-//                throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
-//            }
-//        }
     }
 
     public XAException getCause() {
         return cause;
+    }
+
+    public boolean isEvercommit() {
+        return evercommit;
     }
 
     public int getStatus() {

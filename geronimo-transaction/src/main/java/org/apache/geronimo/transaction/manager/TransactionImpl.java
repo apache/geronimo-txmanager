@@ -746,7 +746,6 @@ public class TransactionImpl implements Transaction {
     }
     
     private void commitResources(List<TransactionBranch> rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
-        //TODO there's some logic removed about dealing with a heuristic rollback on the first resource.
         CommitTask commitTask = new CommitTask(xid, rms, logMark, retryScheduler, txnLog);
         synchronized (this) {
             status = Status.STATUS_COMMITTING;
@@ -756,10 +755,11 @@ public class TransactionImpl implements Transaction {
             status = commitTask.getStatus();
         }
         XAException cause = commitTask.getCause();
+        boolean evercommit = commitTask.isEvercommit();
         if (cause != null) {
-            if (cause.errorCode == XAException.XA_HEURRB) {
+            if (cause.errorCode == XAException.XA_HEURRB&& !evercommit) {
                 throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
-            } else if (cause.errorCode == XAException.XA_HEURRB) {
+            } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
@@ -769,67 +769,6 @@ public class TransactionImpl implements Transaction {
         }
 
 
-//        XAException cause = null;
-//        boolean evercommit = false;
-//        try {
-//            for (Iterator i = rms.iterator(); i.hasNext();) {
-//                TransactionBranch manager = (TransactionBranch) i.next();
-//                try {
-//                    manager.getCommitter().commit(manager.getBranchId(), false);
-//                    evercommit = true;
-//                } catch (XAException e) {
-//                    log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
-//
-//                    if (e.errorCode == XAException.XA_HEURRB) {
-//                        log.info("Transaction has been heuristically rolled back");
-//                        cause = e;
-//                        manager.getCommitter().forget(manager.getBranchId());
-//                    } else if (e.errorCode == XAException.XA_HEURMIX) {
-//                        log.info("Transaction has been heuristically committed and rolled back");
-//                        cause = e;
-//                        evercommit = true;
-//                        manager.getCommitter().forget(manager.getBranchId());
-//                    } else if (e.errorCode == XAException.XA_HEURCOM) {
-//                        // let's not throw an exception as the transaction has been committed
-//                        log.info("Transaction has been heuristically committed");
-//                        evercommit = true;
-//                        manager.getCommitter().forget(manager.getBranchId());
-//                    } else {
-//                        cause = e;
-//                    }
-//                }
-//            }
-//        } catch (XAException e) {
-//            if (e.errorCode == XAException.XAER_NOTA) {
-//                // NOTA in response to forget, means the resource already forgot the transaction
-//                // ignore
-//            } else {
-//                throw (SystemException) new SystemException("Error during two phase commit").initCause(e);
-//            }
-//        }
-//        //if all resources were read only, we didn't write a prepare record.
-//        if (!rms.isEmpty()) {
-//            try {
-//                txnLog.commit(xid, logMark);
-//            } catch (LogException e) {
-//                log.error("Unexpected exception logging commit completion for xid " + xid, e);
-//                throw (SystemException) new SystemException("Unexpected error logging commit completion for xid " + xid).initCause(e);
-//            }
-//        }
-//        synchronized (this) {
-//            status = Status.STATUS_COMMITTED;
-//        }
-//        if (cause != null) {
-//            if (cause.errorCode == XAException.XA_HEURRB && !evercommit) {
-//                throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
-//            } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
-//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
-//            } else if (cause.errorCode == XAException.XA_HEURMIX) {
-//                throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
-//            } else {
-//                throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
-//            }
-//        }
     }
 
     private static String getStateString(int status) {
