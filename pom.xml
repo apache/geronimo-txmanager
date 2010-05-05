@@ -31,16 +31,16 @@
 
     <groupId>org.apache.geronimo.components</groupId>
     <artifactId>geronimo-txmanager-parent</artifactId>
-    <version>3.0</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
 
     <description>Geronimo Transaction Manager</description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/tags/geronimo-txmanager-parent-3.0</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/tags/geronimo-txmanager-parent-3.0</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/components/txmanager/tags/geronimo-txmanager-parent-3.0</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/components/txmanager/trunk</url>
     </scm>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
