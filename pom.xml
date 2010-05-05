@@ -26,6 +26,7 @@
         <groupId>org.apache.geronimo.genesis</groupId>
         <artifactId>genesis-java5-flava</artifactId>
         <version>2.0</version>
+        <relativePath/>
     </parent>
 
     <groupId>org.apache.geronimo.components</groupId>
@@ -49,7 +50,7 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- INTERNAL -->
+            <!-- internal -->
 
             <dependency>
                 <groupId>org.apache.geronimo.components</groupId>
@@ -61,11 +62,13 @@
                 <artifactId>geronimo-connector</artifactId>
                 <version>${version}</version>
             </dependency>
+            
             <!-- external -->
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>1.5.5</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>
@@ -91,6 +94,7 @@
                 <groupId>org.objectweb.howl</groupId>
                 <artifactId>howl</artifactId>
                 <version>1.0.1-1</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

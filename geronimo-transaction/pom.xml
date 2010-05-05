@@ -80,8 +80,12 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Export-Package>org.apache.geronimo.transaction*;version=2.2</Export-Package>
-                        <Import-Package>org.objectweb.howl*;resolution:=optional,javax.resource.spi;version="1.5",*</Import-Package>
+                        <Export-Package>org.apache.geronimo.transaction*;version=3.0</Export-Package>
+                        <Import-Package>
+                            org.objectweb.howl*;resolution:=optional,
+                            javax.resource.spi;version="1.5",
+                            *
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
