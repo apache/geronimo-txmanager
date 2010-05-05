@@ -62,7 +62,7 @@
                 <artifactId>geronimo-connector</artifactId>
                 <version>${version}</version>
             </dependency>
-            
+
             <!-- external -->
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -106,6 +106,26 @@
 
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>2.0.1</version>
+                    <configuration>
+                        <instructions>
+                            <_versionpolicy-impl>[$(version;==;$(@)),$(version;=+;$(@)))</_versionpolicy-impl>
+                            <_versionpolicy-uses>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy-uses>
+                            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+                        </instructions>
+                    </configuration>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <modules>
         <module>geronimo-transaction</module>
