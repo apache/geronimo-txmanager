@@ -33,10 +33,10 @@ import junit.framework.TestCase;
  * */
 public class XidImporterTest extends TestCase{
 
-    MockResourceManager rm1 = new MockResourceManager(true);
+    MockResourceManager rm1 = new MockResourceManager();
     MockResource r1_1 = new MockResource(rm1, "rm1");
     MockResource r1_2 = new MockResource(rm1, "rm1");
-    MockResourceManager rm2 = new MockResourceManager(true);
+    MockResourceManager rm2 = new MockResourceManager();
     MockResource r2_1 = new MockResource(rm2, "rm2");
     MockResource r2_2 = new MockResource(rm2, "rm2");
 

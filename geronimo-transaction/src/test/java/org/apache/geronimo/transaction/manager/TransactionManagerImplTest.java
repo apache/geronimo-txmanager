@@ -33,10 +33,10 @@ import junit.framework.TestCase;
  */
 public class TransactionManagerImplTest extends TestCase {
 
-    MockResourceManager rm1 = new MockResourceManager(true);
+    MockResourceManager rm1 = new MockResourceManager();
     MockResource r1_1 = rm1.getResource("rm1_1");
     MockResource r1_2 = rm1.getResource("rm1_2");
-    MockResourceManager rm2 = new MockResourceManager(true);
+    MockResourceManager rm2 = new MockResourceManager();
     MockResource r2_1 = rm2.getResource("rm2_1");
     MockResource r2_2 = rm2.getResource("rm2_2");
 

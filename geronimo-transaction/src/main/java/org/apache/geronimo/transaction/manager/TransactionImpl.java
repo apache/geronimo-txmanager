@@ -757,7 +757,7 @@ public class TransactionImpl implements Transaction {
         XAException cause = commitTask.getCause();
         boolean evercommit = commitTask.isEvercommit();
         if (cause != null) {
-            if (cause.errorCode == XAException.XA_HEURRB&& !evercommit) {
+            if (cause.errorCode == XAException.XA_HEURRB && !evercommit) {
                 throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURRB && evercommit) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);

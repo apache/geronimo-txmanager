@@ -36,13 +36,20 @@ public class MockResource implements NamedXAResource, NamedXAResourceFactory {
     private boolean prepared;
     private boolean committed;
     private boolean rolledback;
-    private Set preparedXids = new HashSet();
-    private Set knownXids = new HashSet();
-    private Set finishedXids = new HashSet();//end was called with TMSUCCESS or TMFAIL
+    private Set<Xid> preparedXids = new HashSet<Xid>();
+    private Set<Xid> knownXids = new HashSet<Xid>();
+    private Set<Xid> finishedXids = new HashSet<Xid>();//end was called with TMSUCCESS or TMFAIL
+    private int errorStatus;
 
     public MockResource(MockResourceManager manager, String xaResourceName) {
         this.manager = manager;
         this.xaResourceName = xaResourceName;
+    }
+
+    public MockResource(String xaResourceName, int errorStatus) {
+        this.manager = new MockResourceManager();
+        this.xaResourceName = xaResourceName;
+        this.errorStatus = errorStatus;
     }
 
     public int getTransactionTimeout() throws XAException {
@@ -110,6 +117,9 @@ public class MockResource implements NamedXAResource, NamedXAResourceFactory {
         if (!finishedXids.contains(xid)) {
             throw new XAException(XAException.XAER_PROTO);
         }
+        if (errorStatus != 0) {
+            throw new XAException(errorStatus);
+        }
         preparedXids.remove(xid);
         committed = true;
     }
@@ -131,11 +141,11 @@ public class MockResource implements NamedXAResource, NamedXAResourceFactory {
     }
 
     public void forget(Xid xid) throws XAException {
-        throw new UnsupportedOperationException();
+//        throw new UnsupportedOperationException();
     }
 
     public Xid[] recover(int flag) throws XAException {
-        return (Xid[]) preparedXids.toArray(new Xid[preparedXids.size()]);
+        return preparedXids.toArray(new Xid[preparedXids.size()]);
     }
 
     public boolean isPrepared() {

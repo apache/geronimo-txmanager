@@ -32,8 +32,8 @@ public class ProtocolTest extends TestCase {
 
     protected void setUp() throws Exception {
         tm = new TransactionManagerImpl();
-        mrm1 = new MockResourceManager(true);
-        mrm2 = new MockResourceManager(true);
+        mrm1 = new MockResourceManager();
+        mrm2 = new MockResourceManager();
         mr11 = new MockResource(mrm1, "mr11");
         mr12 = new MockResource(mrm1, "mr12");
         mr21 = new MockResource(mrm2, "mr21");

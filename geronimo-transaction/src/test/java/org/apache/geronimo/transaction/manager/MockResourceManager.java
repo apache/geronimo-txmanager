@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -33,20 +32,17 @@ import javax.transaction.xa.Xid;
  * @version $Rev$ $Date$
  */
 public class MockResourceManager {
-    private boolean willCommit;
-    private Map xids = new HashMap();
+    private Map<Xid, Set<XAResource>> xids = new HashMap<Xid, Set<XAResource>>();
 
-    public MockResourceManager(boolean willCommit) {
-        this.willCommit = willCommit;
+    public MockResourceManager() {
     }
 
     public MockResource getResource(String xaResourceName) {
-        MockResource mockResource =  new MockResource(this, xaResourceName);
-        return mockResource;
+        return new MockResource(this, xaResourceName);
     }
 
     public void join(Xid xid, XAResource xaRes) throws XAException {
-        Set resSet = (Set) xids.get(xid);
+        Set<XAResource> resSet = xids.get(xid);
         if (resSet == null) {
             throw new XAException(XAException.XAER_NOTA);
         }
@@ -57,7 +53,7 @@ public class MockResourceManager {
         if (xids.containsKey(xid)) {
             throw new XAException(XAException.XAER_DUPID);
         }
-        Set resSet = new HashSet();
+        Set<XAResource> resSet = new HashSet<XAResource>();
         resSet.add(xaRes);
         xids.put(xid, resSet);
     }
