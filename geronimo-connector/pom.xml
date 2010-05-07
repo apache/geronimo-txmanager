@@ -33,9 +33,9 @@
     <packaging>bundle</packaging>
     <description>Geronimo J2CA Connector Framework</description>
 
-    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
+    <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
-        <siteId>components/${artifactId}</siteId>
+        <siteId>components/${project.artifactId}</siteId>
     </properties>
 
     <dependencies>
@@ -70,6 +70,16 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-test-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

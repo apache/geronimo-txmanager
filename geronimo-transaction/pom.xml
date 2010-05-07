@@ -33,9 +33,9 @@
     <packaging>bundle</packaging>
     <description>Geronimo Transaction Manager</description>
 
-    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
+    <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
-        <siteId>components/${artifactId}</siteId>
+        <siteId>components/${project.artifactId}</siteId>
     </properties>
 
     <dependencies>
