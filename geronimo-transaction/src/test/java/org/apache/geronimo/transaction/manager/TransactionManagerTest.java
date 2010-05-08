@@ -29,7 +29,7 @@ import junit.framework.TestCase;
  *
  * @version $Rev$ $Date$
  */
-public class TestTransactionManager extends TestCase {
+public class TransactionManagerTest extends TestCase {
     TransactionManager tm;
     MockResourceManager rm1, rm2, rm3;
 
@@ -113,8 +113,8 @@ public class TestTransactionManager extends TestCase {
 
     protected void setUp() throws Exception {
         tm = new TransactionManagerImpl();
-        rm1 = new MockResourceManager(true);
-        rm2 = new MockResourceManager(true);
-        rm3 = new MockResourceManager(false);
+        rm1 = new MockResourceManager();
+        rm2 = new MockResourceManager();
+        rm3 = new MockResourceManager();
     }
 }

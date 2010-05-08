@@ -68,6 +68,7 @@ public class CommitTask implements Runnable {
             try {
                 try {
                     manager.getCommitter().commit(manager.getBranchId(), false);
+                    evercommit = true;
                     i.remove();
                 } catch (XAException e) {
                     log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
