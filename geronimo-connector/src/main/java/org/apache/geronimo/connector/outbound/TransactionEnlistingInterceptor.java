@@ -23,6 +23,8 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * TransactionEnlistingInterceptor.java
@@ -33,6 +35,7 @@ import javax.transaction.xa.XAResource;
  * @version 1.0
  */
 public class TransactionEnlistingInterceptor implements ConnectionInterceptor {
+    protected static Log log = LogFactory.getLog(TransactionEnlistingInterceptor.class);
 
     private final ConnectionInterceptor next;
     private final TransactionManager transactionManager;
@@ -51,7 +54,14 @@ public class TransactionEnlistingInterceptor implements ConnectionInterceptor {
             Transaction transaction = TxUtil.getTransactionIfActive(transactionManager);
             if (transaction != null) {
                 XAResource xares = mci.getXAResource();
+                if (log.isTraceEnabled()) {
+                    log.trace("Enlisting connection " + connectionInfo + " with XAResource " + xares + " in transaction: " + transaction);
+                }
                 transaction.enlistResource(xares);
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.trace("not enlisting connection " + connectionInfo + " with XAResource " + mci.getXAResource() + " no transaction");
+                }
             }
         } catch (SystemException e) {
             returnConnection(connectionInfo, ConnectionReturnAction.DESTROY);
@@ -82,11 +92,19 @@ public class TransactionEnlistingInterceptor implements ConnectionInterceptor {
             Transaction transaction = TxUtil.getTransactionIfActive(transactionManager);
             if (transaction != null) {
                 XAResource xares = mci.getXAResource();
+                if (log.isTraceEnabled()) {
+                    log.trace("Delisting connection " + connectionInfo + " with XAResource " + xares + " in transaction: " + transaction, new Exception("stack trace"));
+                }
                 transaction.delistResource(xares, XAResource.TMSUSPEND);
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.trace("not delisting connection " + connectionInfo + " with XAResource " + mci.getXAResource() + " no transaction");
+                }
             }
 
         } catch (SystemException e) {
             //maybe we should warn???
+            log.info("Could not delist resource: " + connectionInfo  + " with XAResource: " + connectionInfo.getManagedConnectionInfo().getXAResource(), e);
             connectionReturnAction = ConnectionReturnAction.DESTROY;
         } catch (IllegalStateException e) {
             connectionReturnAction = ConnectionReturnAction.DESTROY;
@@ -97,6 +115,11 @@ public class TransactionEnlistingInterceptor implements ConnectionInterceptor {
 
     public void destroy() {
         next.destroy();
+    }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[transactionManager=").append(transactionManager).append("]\n");
+        next.info(s);
     }
 
 }

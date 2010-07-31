@@ -21,7 +21,8 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import javax.transaction.xa.XAException;
 
-import org.apache.geronimo.transaction.manager.NamedXAResource;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  *
@@ -30,6 +31,7 @@ import org.apache.geronimo.transaction.manager.NamedXAResource;
  *
  * */
 public class WrapperNamedXAResource implements NamedXAResource {
+    protected static Log log = LogFactory.getLog(WrapperNamedXAResource.class.getName());
 
     private final XAResource xaResource;
     private final String name;
@@ -48,6 +50,9 @@ public class WrapperNamedXAResource implements NamedXAResource {
     }
 
     public void end(Xid xid, int flags) throws XAException {
+        if (flags == XAResource.TMSUSPEND && log.isTraceEnabled()) {
+            log.trace("Suspend called on XAResource: " + getName(), new Exception("Stack trace"));
+        }
         xaResource.end(xid, flags);
     }
 

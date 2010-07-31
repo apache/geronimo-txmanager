@@ -34,7 +34,7 @@ import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
  * @version $Rev$ $Date$
  */
 public class GenericConnectionManager extends AbstractConnectionManager {
-    protected static final Log log = LogFactory.getLog(AbstractSinglePoolConnectionInterceptor.class.getName());
+    protected static final Log log = LogFactory.getLog(GenericConnectionManager.class.getName());
 
     //default constructor for use as endpoint
     public GenericConnectionManager() {
@@ -125,6 +125,11 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             }
             tail.setStack(stack);
             this.stack = stack;
+            if (log.isDebugEnabled()) {
+                StringBuilder s = new StringBuilder("ConnectionManager Interceptor stack;\n");
+                stack.info(s);
+                log.debug(s.toString());
+            }
         }
 
         public ConnectionInterceptor getStack() {

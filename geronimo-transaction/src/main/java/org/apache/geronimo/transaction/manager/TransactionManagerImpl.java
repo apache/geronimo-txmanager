@@ -205,8 +205,8 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     public Object getTransactionKey() {
-    	TransactionImpl tx = (TransactionImpl) getTransaction();
-        return tx == null ? null: tx.getTransactionKey();
+        TransactionImpl tx = getActiveTransactionImpl();
+        return tx.getTransactionKey();
     }
 
     public int getTransactionStatus() {

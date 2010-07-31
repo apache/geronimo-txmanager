@@ -166,4 +166,10 @@ public class ConnectionTrackingCoordinatorTest extends TestCase
 
     public void destroy() {        
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("\n");
+        s.append("<end>");
+    }
+
 }

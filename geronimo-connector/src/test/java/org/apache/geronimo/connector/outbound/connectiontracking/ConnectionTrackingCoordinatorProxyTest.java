@@ -283,6 +283,11 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
         return ci;
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("\n");
+        s.append("<end>");
+    }
+
 
     public static interface Connection {
         String getString();
