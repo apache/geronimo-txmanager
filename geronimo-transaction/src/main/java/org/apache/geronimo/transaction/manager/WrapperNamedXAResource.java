@@ -46,17 +46,23 @@ public class WrapperNamedXAResource implements NamedXAResource {
     }
 
     public void commit(Xid xid, boolean onePhase) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Commit called on XAResource " + getName() + "\n Xid: " + xid + "\n onePhase:" + onePhase);
+        }
         xaResource.commit(xid, onePhase);
     }
 
     public void end(Xid xid, int flags) throws XAException {
-        if (flags == XAResource.TMSUSPEND && log.isTraceEnabled()) {
-            log.trace("Suspend called on XAResource: " + getName(), new Exception("Stack trace"));
+        if (log.isTraceEnabled()) {
+            log.trace("End called on XAResource " + getName() + "\n Xid: " + xid + "\n flags:" + decodeFlags(flags));
         }
         xaResource.end(xid, flags);
     }
 
     public void forget(Xid xid) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Forget called on XAResource " + getName() + "\n Xid: " + xid);
+        }
         xaResource.forget(xid);
     }
 
@@ -72,14 +78,23 @@ public class WrapperNamedXAResource implements NamedXAResource {
     }
 
     public int prepare(Xid xid) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Prepare called on XAResource " + getName() + "\n Xid: " + xid);
+        }
         return xaResource.prepare(xid);
     }
 
     public Xid[] recover(int flag) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Recover called on XAResource " + getName() + "\n flags: " + decodeFlags(flag));
+        }
         return xaResource.recover(flag);
     }
 
     public void rollback(Xid xid) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Rollback called on XAResource " + getName() + "\n Xid: " + xid);
+        }
         xaResource.rollback(xid);
     }
 
@@ -88,7 +103,35 @@ public class WrapperNamedXAResource implements NamedXAResource {
     }
 
     public void start(Xid xid, int flags) throws XAException {
+        if (log.isTraceEnabled()) {
+            log.trace("Start called on XAResource " + getName() + "\n Xid: " + xid + "\n flags:" + decodeFlags(flags));
+        }
         xaResource.start(xid, flags);
+    }
+    private String decodeFlags(int flags) {
+        if (flags == 0) {
+            return " TMNOFLAGS";
+        }
+        StringBuilder b = new StringBuilder();
+        decodeFlag(flags, b, TMENDRSCAN, " TMENDRSCAN");
+        decodeFlag(flags, b, TMFAIL, " TMFAIL");
+        decodeFlag(flags, b, TMJOIN, " TMJOIN");
+        decodeFlag(flags, b, TMONEPHASE, " TMONEPHASE");
+        decodeFlag(flags, b, TMRESUME, " TMRESUME");
+        decodeFlag(flags, b, TMSTARTRSCAN, " TMSTARTRSCAN");
+        decodeFlag(flags, b, TMSUCCESS, " TMSUCCESS");
+        decodeFlag(flags, b, TMSUSPEND, " TMSUSPEND");
+        if (flags != 0) {
+            b.append(" remaining: ").append(flags);
+        }
+        return b.toString();
+    }
+
+    private void decodeFlag(int flags, StringBuilder b, int flag, String flagName) {
+        if ((flags & flag) == flag) {
+            b.append(flagName);
+            flags = flags ^ flag;
+        }
     }
 }
 
