@@ -44,8 +44,8 @@ public class SharedConnectorInstanceContext implements ConnectorInstanceContext 
         }
     }
 
-    public void share(SharedConnectorInstanceContext context) {
-        connectionManagerMap = context.connectionManagerMap;
+    public void share(ConnectorInstanceContext context) {
+        connectionManagerMap = context.getConnectionManagerMap();
     }
 
     public void hide() {
