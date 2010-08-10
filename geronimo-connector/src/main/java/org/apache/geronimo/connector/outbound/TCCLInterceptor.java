@@ -56,4 +56,10 @@ public class TCCLInterceptor implements ConnectionInterceptor{
     public void destroy() {
         this.next.destroy();
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[classLoader=").append(classLoader).append("]\n");
+        next.info(s);
+    }
+    
 }

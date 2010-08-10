@@ -99,4 +99,9 @@ public class SubjectInterceptor implements ConnectionInterceptor {
         next.destroy();
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[subjectSource=").append(subjectSource).append("]\n");
+        next.info(s);
+    }
+
 }

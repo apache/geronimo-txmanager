@@ -51,4 +51,9 @@ public class XAResourceInsertionInterceptor implements ConnectionInterceptor {
         next.destroy();
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[name=").append(name).append("]\n");
+        next.info(s);
+    }
+
 }

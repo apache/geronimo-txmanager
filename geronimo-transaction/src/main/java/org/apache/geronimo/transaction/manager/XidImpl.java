@@ -42,6 +42,16 @@ public class XidImpl implements Xid, Serializable {
         this.globalId = globalId;
         //this.hash = hash(0, globalId);
         branchId = new byte[Xid.MAXBQUALSIZE];
+        check();
+    }
+
+    private void check() {
+        if (globalId.length > Xid.MAXGTRIDSIZE) {
+            throw new IllegalStateException("Global id is too long: " + toString());
+        }
+        if (branchId.length > Xid.MAXBQUALSIZE) {
+            throw new IllegalStateException("Branch id is too long: " + toString());
+        }
     }
 
     /**
@@ -61,12 +71,14 @@ public class XidImpl implements Xid, Serializable {
         }
         branchId = branch;
         //this.hash = hash(hash, branchId);
+        check();
     }
 
     public XidImpl(int formatId, byte[] globalId, byte[] branchId) {
         this.formatId = formatId;
         this.globalId = globalId;
         this.branchId = branchId;
+        check();
     }
 
     private int hash(int hash, byte[] id) {
@@ -106,15 +118,18 @@ public class XidImpl implements Xid, Serializable {
     }
 
     public String toString() {
-        StringBuffer s = new StringBuffer();
-        s.append("[globalId=");
+        StringBuilder s = new StringBuilder();
+        s.append("[Xid:globalId=");
         for (int i = 0; i < globalId.length; i++) {
             s.append(Integer.toHexString(globalId[i]));
         }
+        s.append(",length=").append(globalId.length);
         s.append(",branchId=");
         for (int i = 0; i < branchId.length; i++) {
             s.append(Integer.toHexString(branchId[i]));
         }
+        s.append(",length=");
+        s.append(branchId.length);
         s.append("]");
         return s.toString();
     }

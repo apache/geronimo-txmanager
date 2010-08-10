@@ -53,6 +53,16 @@ public class XidImpl2 implements Xid, Serializable {
         System.arraycopy(globalId, 0, buffer, HEADER_SIZE + FORMAT_SIZE, Xid.MAXGTRIDSIZE);
 
         //this.hash = hash(buffer);
+        check();
+    }
+
+    private void check() {
+        if (buffer[GLOBALID_SIZE_POS] > Xid.MAXGTRIDSIZE) {
+            throw new IllegalStateException("Global ID too large: " + buffer[GLOBALID_SIZE_POS]);
+        }
+        if (buffer[BRANCHID_SIZE_POS] > Xid.MAXBQUALSIZE) {
+            throw new IllegalStateException("Branch ID too large: " + buffer[GLOBALID_SIZE_POS]);
+        }
     }
 
     /**
@@ -71,6 +81,7 @@ public class XidImpl2 implements Xid, Serializable {
         buffer[BRANCHID_SIZE_POS] = (byte) branch.length;
         System.arraycopy(branch, 0, buffer, HEADER_SIZE + FORMAT_SIZE + Xid.MAXGTRIDSIZE, Xid.MAXBQUALSIZE);
         //hash = hash(buffer);
+        check();
     }
 
     public XidImpl2(int formatId, byte[] globalId, byte[] branch) {
@@ -80,6 +91,7 @@ public class XidImpl2 implements Xid, Serializable {
         buffer[BRANCHID_SIZE_POS] = (byte) branch.length;
         System.arraycopy(branch, 0, buffer, HEADER_SIZE + FORMAT_SIZE + Xid.MAXGTRIDSIZE, Xid.MAXBQUALSIZE);
         //hash = hash(buffer);
+        check();
     }
 
     private int hash(byte[] id) {
@@ -122,7 +134,7 @@ public class XidImpl2 implements Xid, Serializable {
     }
 
     public String toString() {
-        StringBuffer s = new StringBuffer("[formatId=Gero,");
+        StringBuffer s = new StringBuffer("[XidImpl2:formatId=Gero,");
         s.append("globalId=");
         for (int i = FORMAT_SIZE; i < FORMAT_SIZE + Xid.MAXGTRIDSIZE; i++) {
             s.append(Integer.toHexString(buffer[i]));

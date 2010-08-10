@@ -85,4 +85,10 @@ public class ThreadLocalCachingConnectionInterceptor implements ConnectionInterc
     public void destroy() {
         next.destroy();
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[matchConnections=").append(matchConnections).append("]\n");
+        next.info(s);
+    }
+    
 }

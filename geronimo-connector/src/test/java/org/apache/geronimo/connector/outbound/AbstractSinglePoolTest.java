@@ -268,5 +268,11 @@ public class AbstractSinglePoolTest extends TestCase {
         public void destroy() {
             next.destroy();
         }
+
+        public void info(StringBuilder s) {
+            s.append(getClass().getName()).append("\n");
+            next.info(s);
+        }
+
     }
 }

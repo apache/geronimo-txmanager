@@ -83,4 +83,9 @@ public class MCFConnectionInterceptor implements ConnectionInterceptor {
         this.stack = stack;
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[stack=").append(stack).append("]\n");
+        s.append("<end>");
+    }
+
 }

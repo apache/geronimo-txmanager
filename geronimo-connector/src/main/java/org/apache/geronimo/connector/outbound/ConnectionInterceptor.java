@@ -36,4 +36,6 @@ public interface ConnectionInterceptor {
 
     void destroy();
 
+    void info(StringBuilder s);
+
 } // ConnectionInterceptor

@@ -53,4 +53,14 @@ public class LocalXAResourceInsertionInterceptor
     public void destroy() {
         next.destroy();        
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[name=").append(name).append("]\n");
+        if (next == null) {
+            s.append("<end>");
+        } else {
+            next.info(s);
+        }
+    }
+
 }

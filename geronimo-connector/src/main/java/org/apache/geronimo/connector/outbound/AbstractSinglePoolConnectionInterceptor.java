@@ -44,7 +44,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
     protected Semaphore permits;
     protected int blockingTimeoutMilliseconds;
     protected int connectionCount = 0;
-    private long idleTimeoutMilliseconds;
+    protected long idleTimeoutMilliseconds;
     private IdleReleaser idleReleaser;
     protected Timer timer = PoolIdleReleaserTimer.getTimer();
     protected int maxSize = 0;
@@ -68,7 +68,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
     public void getConnection(ConnectionInfo connectionInfo) throws ResourceException {
         if (connectionInfo.getManagedConnectionInfo().getManagedConnection() != null) {
             if (log.isTraceEnabled()) {
-                log.trace("using already assigned connection " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this);
+                log.trace("supplying already assigned connection from pool " + this + " " + connectionInfo);
             }
             return;
         }
@@ -103,7 +103,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
     public void returnConnection(ConnectionInfo connectionInfo,
                                  ConnectionReturnAction connectionReturnAction) {
         if (log.isTraceEnabled()) {
-            log.trace("returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " to pool " + this);
+            log.trace("returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this);
         }
 
         // not strictly synchronized with destroy(), but pooled operations in internalReturn() are...
@@ -120,7 +120,9 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
         try {
             ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
             if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE && mci.hasConnectionHandles()) {
-                log.warn("Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
+                if (log.isTraceEnabled()) {
+                    log.trace("Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
+                }
                 return;
             }
 
@@ -177,6 +179,9 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
             }
         }
         //we must destroy connection.
+        if (log.isTraceEnabled()) {
+            log.trace("Discarding connection in pool " + this + " " + connectionInfo);
+        }
         next.returnConnection(connectionInfo, connectionReturnAction);
         connectionCount--;
         return releasePermit;

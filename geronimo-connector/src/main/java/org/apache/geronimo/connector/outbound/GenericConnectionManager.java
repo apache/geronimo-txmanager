@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class GenericConnectionManager extends AbstractConnectionManager {
-    protected static final Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
+    protected static final Logger log = LoggerFactory.getLogger(GenericConnectionManager.class);
 
     //default constructor to support externalizable subclasses
     public GenericConnectionManager() {
@@ -125,6 +125,11 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             }
             tail.setStack(stack);
             this.stack = stack;
+            if (log.isDebugEnabled()) {
+                StringBuilder s = new StringBuilder("ConnectionManager Interceptor stack;\n");
+                stack.info(s);
+                log.debug(s.toString());
+            }
         }
 
         public ConnectionInterceptor getStack() {

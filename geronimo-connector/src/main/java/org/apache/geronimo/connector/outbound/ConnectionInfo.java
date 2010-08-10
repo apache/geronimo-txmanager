@@ -123,6 +123,11 @@ public class ConnectionInfo {
         return trace;
     }
 
-
-
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("handle: ").append(connection);
+        b.append(mci);
+        return b.toString();
+    }
 } // ConnectionInfo
