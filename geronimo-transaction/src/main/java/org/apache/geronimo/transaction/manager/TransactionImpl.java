@@ -711,7 +711,7 @@ public class TransactionImpl implements Transaction {
                         || e.errorCode == XAException.XAER_NOTA) {
                     // Per XA spec, XAException.XAER_RMERR from commit means An error occurred in 
                     // committing the work performed on behalf of the transaction branch 
-                    // and the branch’s work has been rolled back. 
+                    // and the branches work has been rolled back. 
                     // XAException.XAER_NOTA:  ssume the DB took a unilateral rollback decision and forgot the transaction
                     log.info("Transaction has been rolled back");
                     cause = e;

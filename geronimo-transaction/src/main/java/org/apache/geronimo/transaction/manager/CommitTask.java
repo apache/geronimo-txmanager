@@ -58,7 +58,6 @@ public class CommitTask implements Runnable {
         this.txLog = txLog;
     }
 
-    @Override
     public void run() {
         synchronized (this) {
             status = Status.STATUS_COMMITTING;
