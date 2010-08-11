@@ -32,6 +32,8 @@ public class TransactionBranchInfoImpl implements TransactionBranchInfo {
     private final String resourceName;
 
     public TransactionBranchInfoImpl(Xid branchXid, String resourceName) {
+        if (resourceName == null) throw new NullPointerException("resourceName");
+        if (branchXid == null) throw new NullPointerException("branchXid");
         this.branchXid = branchXid;
         this.resourceName = resourceName;
     }
@@ -42,5 +44,17 @@ public class TransactionBranchInfoImpl implements TransactionBranchInfo {
 
     public String getResourceName() {
         return resourceName;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder("[Transaction branch:\n");
+        b.append(" name:").append(resourceName);
+        b.append("\n branchId: ");
+        for (byte i : branchXid.getBranchQualifier()) {
+            b.append(Integer.toHexString(i));
+        }
+        b.append("\n]\n");
+        return b.toString();
     }
 }

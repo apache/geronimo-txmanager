@@ -74,9 +74,11 @@ public class RecoveryImpl implements Recovery {
         }
         for (XidBranchesPair xidBranchesPair : preparedXids) {
             Xid xid = xidBranchesPair.getXid();
+            log.trace("read prepared global xid from log: " + toString(xid));
             if (xidFactory.matchesGlobalId(xid.getGlobalTransactionId())) {
                 ourXids.put(new ByteArrayWrapper(xid.getGlobalTransactionId()), xidBranchesPair);
                 for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
+                    log.trace("read branch from log: " + transactionBranchInfo.toString());
                     String name = transactionBranchInfo.getResourceName();
                     Set<XidBranchesPair> transactionsForName = nameToOurTxMap.get(name);
                     if (transactionsForName == null) {
@@ -86,6 +88,7 @@ public class RecoveryImpl implements Recovery {
                     transactionsForName.add(xidBranchesPair);
                 }
             } else {
+                log.trace("read external prepared xid from log: " + toString(xid));
                 TransactionImpl externalTx = new ExternalTransaction(xid, txLog, retryScheduler, xidBranchesPair.getBranches());
                 externalXids.put(xid, externalTx);
                 externalGlobalIdMap.put(xid.getGlobalTransactionId(), externalTx);
@@ -99,6 +102,7 @@ public class RecoveryImpl implements Recovery {
         Xid[] prepared = xaResource.recover(XAResource.TMSTARTRSCAN + XAResource.TMENDRSCAN);
         for (int i = 0; prepared != null && i < prepared.length; i++) {
             Xid xid = prepared[i];
+            log.trace("considering recovered xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
             ByteArrayWrapper globalIdWrapper = new ByteArrayWrapper(xid.getGlobalTransactionId());
             XidBranchesPair xidNamesPair = ourXids.get(globalIdWrapper);
             
@@ -107,7 +111,8 @@ public class RecoveryImpl implements Recovery {
                 // Only commit if this NamedXAResource was the XAResource for the transaction.
                 // Otherwise, wait for recoverResourceManager to be called for the actual XAResource 
                 // This is a bit wasteful, but given our management of XAResources by "name", is about the best we can do.
-                if (isNameInTransaction(xidNamesPair, name)) {
+                if (isNameInTransaction(xidNamesPair, name, xid)) {
+                    log.trace("This xid was prepared from this XAResource: committing");
                     try {
                         xaResource.commit(xid, false);
                     } catch(XAException e) {
@@ -115,9 +120,12 @@ public class RecoveryImpl implements Recovery {
                         log.error("Recovery error", e);
                     }
                     removeNameFromTransaction(xidNamesPair, name, true);
+                } else {
+                    log.trace("This xid was prepared from another XAResource, ignoring");
                 }
             } else if (xidFactory.matchesGlobalId(xid.getGlobalTransactionId())) {
                 //ours, but prepare not logged
+                log.trace("this xid was initiated from this tm but not prepared: rolling back");
                 try {
                     xaResource.rollback(xid);
                 } catch (XAException e) {
@@ -129,6 +137,7 @@ public class RecoveryImpl implements Recovery {
                 TransactionImpl externalTx = externalGlobalIdMap.get(xid.getGlobalTransactionId());
                 if (externalTx == null) {
                     //we did not prepare this branch, rollback.
+                    log.trace("this xid is from an external transaction and was not prepared: rolling back");
                     try {
                         xaResource.rollback(xid);
                     } catch (XAException e) {
@@ -136,6 +145,7 @@ public class RecoveryImpl implements Recovery {
                         log.error("Could not roll back", e);
                     }
                 } else {
+                    log.trace("this xid is from an external transaction and was prepared in this tm.  Waiting for instructions from transaction originator");
                     //we prepared this branch, must wait for commit/rollback command.
                     externalTx.addBranchXid(xaResource, xid);
                 }
@@ -150,15 +160,21 @@ public class RecoveryImpl implements Recovery {
         }
     }
 
-    private boolean isNameInTransaction(XidBranchesPair xidBranchesPair, String name) {
+    private boolean isNameInTransaction(XidBranchesPair xidBranchesPair, String name, Xid xid) {
         for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
-            if (name.equals(transactionBranchInfo.getResourceName())) {
+            if (name.equals(transactionBranchInfo.getResourceName()) && equals(xid, transactionBranchInfo.getBranchXid())) {
                 return true;
             }
         }
         return false;
     }
-    
+
+    private boolean equals(Xid xid1, Xid xid2) {
+        return xid1.getFormatId() == xid1.getFormatId()
+                && Arrays.equals(xid1.getBranchQualifier(), xid2.getBranchQualifier())
+                && Arrays.equals(xid1.getGlobalTransactionId(), xid2.getGlobalTransactionId());
+    }
+
     private void removeNameFromTransaction(XidBranchesPair xidBranchesPair, String name, boolean warn) {
         int removed = 0;
         for (Iterator branches = xidBranchesPair.getBranches().iterator(); branches.hasNext();) {
@@ -204,6 +220,28 @@ public class RecoveryImpl implements Recovery {
 
     public synchronized Map<Xid, TransactionImpl> getExternalXids() {
         return new HashMap<Xid, TransactionImpl>(externalXids);
+    }
+
+    private static String toString(Xid xid) {
+        if (xid instanceof XidImpl) {
+            return xid.toString();
+        }
+        StringBuilder s = new StringBuilder();
+        s.append("[Xid:class=").append(xid.getClass().getSimpleName()).append(":globalId=");
+        byte[] globalId = xid.getGlobalTransactionId();
+        for (int i = 0; i < globalId.length; i++) {
+            s.append(Integer.toHexString(globalId[i]));
+        }
+        s.append(",length=").append(globalId.length);
+        s.append(",branchId=");
+        byte[] branchId = xid.getBranchQualifier();
+        for (int i = 0; i < branchId.length; i++) {
+            s.append(Integer.toHexString(branchId[i]));
+        }
+        s.append(",length=");
+        s.append(branchId.length);
+        s.append("]");
+        return s.toString();
     }
 
     private static class ByteArrayWrapper {

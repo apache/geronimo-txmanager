@@ -43,7 +43,7 @@ public class RecoverTask implements Runnable {
         this.recoverableTransactionManager = recoverableTransactionManager;
     }
 
-    @Override
+//    @Override
     public void run() {
         try {
             NamedXAResource namedXAResource = namedXAResourceFactory.getNamedXAResource();
