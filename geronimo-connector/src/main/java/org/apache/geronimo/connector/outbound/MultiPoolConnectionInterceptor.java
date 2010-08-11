@@ -166,6 +166,12 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
         }
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[useSubject=").append(useSubject).append(",useCRI=").append(useCRI).append(",pool count=").append(pools.size()).append("]\n");
+        next.info(s);
+    }
+
+
     static class SubjectCRIKey {
         private final Subject subject;
         private final ConnectionRequestInfo cri;

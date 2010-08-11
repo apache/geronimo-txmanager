@@ -65,7 +65,7 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
         //There can be an inactive transaction context when a connection is requested in
         //Synchronization.afterCompletion().
 
-        // get the current transation and status... if there is a problem just assume there is no transaction present
+        // get the current transaction and status... if there is a problem just assume there is no transaction present
         Transaction transaction = TxUtil.getTransactionIfActive(transactionManager);
         if (transaction != null) {
             ManagedConnectionInfos managedConnectionInfos = ConnectorTransactionContext.get(transaction, this);
@@ -73,6 +73,9 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
                 if (!managedConnectionInfos.containsUnshared(connectionInfo.getManagedConnectionInfo())) {
                     next.getConnection(connectionInfo);
                     managedConnectionInfos.addUnshared(connectionInfo.getManagedConnectionInfo());
+                    if (log.isTraceEnabled()) {
+                        log.trace("Enlisting connection already associated with handle " + infoString(connectionInfo));
+                    }
                 }
             } else {
                 ManagedConnectionInfo managedConnectionInfo = managedConnectionInfos.getShared();
@@ -83,12 +86,15 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
                         //enlists connection
                         next.getConnection(connectionInfo);
                         managedConnectionInfos.addUnshared(previousMci);
+                        if (log.isTraceEnabled()) {
+                            log.trace("Enlisting existing connection associated with connection handle with current tx  " + infoString(connectionInfo));
+                        }
                     } else {
                         connectionInfo.setManagedConnectionInfo(managedConnectionInfo);
 
                         //return;
                         if (log.isTraceEnabled()) {
-                            log.trace("supplying connection from tx cache " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                            log.trace("supplying connection from tx cache  " + infoString(connectionInfo));
                         }
                     }
                 } else {
@@ -108,7 +114,7 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
 
         if (connectionReturnAction == ConnectionReturnAction.DESTROY) {
             if (log.isTraceEnabled()) {
-                log.trace("destroying connection" + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                log.trace("destroying connection " + infoString(connectionInfo));
             }
             next.returnConnection(connectionInfo, connectionReturnAction);
             return;
@@ -119,7 +125,7 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
             if (transaction != null) {
                 if (TxUtil.isActive(transaction)) {
                     if (log.isTraceEnabled()) {
-                        log.trace("tx active, not returning connection" + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                        log.trace("tx active, not returning connection  " + infoString(connectionInfo));
                     }
                     return;
                 }
@@ -128,14 +134,14 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
                 ManagedConnectionInfos managedConnectionInfos = ConnectorTransactionContext.get(transaction, this);
                 managedConnectionInfos.remove(connectionInfo.getManagedConnectionInfo());
                 if (log.isTraceEnabled()) {
-                    log.trace("tx ended, but not removed");
+                    log.trace("tx ended, return during synchronization afterCompletion " + infoString(connectionInfo));
                 }
             }
         } catch (SystemException e) {
             //ignore
         }
         if (log.isTraceEnabled()) {
-            log.trace("tx ended, returning connection" + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+            log.trace("tx ended, returning connection " + infoString(connectionInfo));
         }
         internalReturn(connectionInfo, connectionReturnAction);
     }
@@ -143,14 +149,14 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
     private void internalReturn(ConnectionInfo connectionInfo, ConnectionReturnAction connectionReturnAction) {
         if (connectionInfo.getManagedConnectionInfo().hasConnectionHandles()) {
             if (log.isTraceEnabled()) {
-                log.trace("not returning connection from tx cache (has handles) " + connectionInfo.getConnectionHandle() + " for managed connection " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+                log.trace("not returning connection from tx cache (has handles) " + infoString(connectionInfo));
             }
             return;
         }
         //No transaction, no handles, we return it.
         next.returnConnection(connectionInfo, connectionReturnAction);
         if (log.isTraceEnabled()) {
-            log.trace("completed return of connection through tx cache " + connectionInfo.getConnectionHandle() + " for MCI: " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to tx caching interceptor " + this);
+            log.trace("completed return of connection through tx cache " + infoString(connectionInfo));
         }
     }
 
@@ -163,13 +169,13 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
         ManagedConnectionInfo sharedMCI = managedConnectionInfos.getShared();
         if (sharedMCI != null) {
             if (log.isTraceEnabled()) {
-                log.trace("Transaction completed, attempting to return shared connection MCI: " + sharedMCI + " for managed connection " + sharedMCI.getManagedConnection() + " to tx caching interceptor " + this);
+                log.trace("Transaction completed, attempting to return shared connection MCI: " + infoString(sharedMCI));
             }
             returnHandle(sharedMCI);
         }
         for (ManagedConnectionInfo managedConnectionInfo : managedConnectionInfos.getUnshared()) {
             if (log.isTraceEnabled()) {
-                log.trace("Transaction completed, attempting to return unshared connection MCI: " + managedConnectionInfo + " for managed connection " + managedConnectionInfo.getManagedConnection() + " to tx caching interceptor " + this);
+                log.trace("Transaction completed, attempting to return unshared connection MCI: " + infoString(managedConnectionInfo));
             }
             returnHandle(managedConnectionInfo);
         }
@@ -181,6 +187,15 @@ public class TransactionCachingInterceptor implements ConnectionInterceptor, Con
         internalReturn(connectionInfo, ConnectionReturnAction.RETURN_HANDLE);
     }
 
+    private String infoString(Object connectionInfo) {
+        return "for tx caching interceptor " + this + " " + connectionInfo;
+    }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[transactionManager=").append(transactionManager).append("]\n");
+        next.info(s);
+    }
+    
     public static class ManagedConnectionInfos {
         private ManagedConnectionInfo shared;
         private Set<ManagedConnectionInfo> unshared = new HashSet<ManagedConnectionInfo>(1);

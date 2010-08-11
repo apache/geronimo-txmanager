@@ -30,7 +30,7 @@ import junit.framework.TestCase;
 import org.apache.geronimo.connector.mock.MockManagedConnectionFactory;
 
 /**
- * @version $Rev:$ $Date:$
+ * @version $Rev$ $Date$
  */
 public class AbstractSinglePoolTest extends TestCase {
 
@@ -268,5 +268,11 @@ public class AbstractSinglePoolTest extends TestCase {
         public void destroy() {
             next.destroy();
         }
+
+        public void info(StringBuilder s) {
+            s.append(getClass().getName()).append("\n");
+            next.info(s);
+        }
+
     }
 }

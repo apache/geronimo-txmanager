@@ -276,6 +276,10 @@ public class ConnectionTrackingCoordinatorProxyTest extends TestCase implements 
     public void destroy() {
     }
 
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("\n");
+    }
+
     private ConnectionInfo createConnectionInfo() {
         ConnectionInfo ci = new ConnectionInfo(mci);
         ci.setConnectionHandle(connection);

@@ -74,4 +74,13 @@ public class ConnectionHandleInterceptor implements ConnectionInterceptor {
     public void destroy() {
         next.destroy();
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("\n");
+        if (next == null) {
+            s.append("<end>");
+        } else {
+            next.info(s);
+        }
+    }
 }

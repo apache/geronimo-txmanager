@@ -69,7 +69,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                 next.getConnection(connectionInfo);
                 connectionCount++;
                 if (log.isTraceEnabled()) {
-                    log.trace("Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
+                    log.trace("Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
                 }
                 return;
             } else {
@@ -81,7 +81,7 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             if (selectOneAssumeMatch) {
                 connectionInfo.setManagedConnectionInfo(newMCI);
                 if (log.isTraceEnabled()) {
-                    log.trace("Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
+                    log.trace("Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
                 }
                 return;
             }
@@ -166,6 +166,16 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
                 }
             }
         }
+    }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName());
+        s.append("[minSize=").append(minSize);
+        s.append(",maxSize=").append(maxSize);
+        s.append(",idleTimeoutMilliseconds=").append(idleTimeoutMilliseconds);
+        s.append(",blockingTimeoutMilliseconds=").append(blockingTimeoutMilliseconds);
+        s.append(".selectOneAssumeMatch=").append(selectOneAssumeMatch).append("]\n");
+        next.info(s);
     }
 
 }

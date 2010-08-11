@@ -123,4 +123,14 @@ public class ConnectionTrackingInterceptor implements ConnectionInterceptor {
             }
         }
     }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName()).append("[key=").append(key).append("]\n");
+        if (next == null) {
+            s.append("<end>");
+        } else {
+            next.info(s);
+        }
+    }
+
 }

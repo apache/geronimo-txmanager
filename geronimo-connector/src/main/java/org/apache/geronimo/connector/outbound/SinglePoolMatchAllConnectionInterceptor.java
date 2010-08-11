@@ -67,7 +67,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
                     connectionInfo.setManagedConnectionInfo(pool.get(matchedMC));
                     pool.remove(matchedMC);
                     if (log.isTraceEnabled()) {
-                        log.trace("Returning pooled connection " + connectionInfo.getManagedConnectionInfo());
+                        log.trace("Supplying existing connection from pool " + this + " " + connectionInfo);
                     }
                     if (connectionCount < minSize) {
                         timer.schedule(new FillTask(connectionInfo), 10);
@@ -78,6 +78,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             //matching failed or pool is empty
             //if pool is at maximum size, pick a cx to kill
             if (connectionCount == maxSize) {
+                log.trace("Pool is at max size but no connections match, picking one to destroy");
                 Iterator iterator = pool.entrySet().iterator();
                 ManagedConnectionInfo kill = (ManagedConnectionInfo) ((Map.Entry) iterator.next()).getValue();
                 iterator.remove();
@@ -87,7 +88,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             next.getConnection(connectionInfo);
             connectionCount++;
             if (log.isTraceEnabled()) {
-                log.trace("Returning new connection " + connectionInfo.getManagedConnectionInfo());
+                log.trace("Supplying new connection from pool " + this + " " + connectionInfo);
             }
             if (connectionCount < minSize) {
                 timer.schedule(new FillTask(connectionInfo), 10);
@@ -146,6 +147,15 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             }
         }
 
+    }
+
+    public void info(StringBuilder s) {
+        s.append(getClass().getName());
+        s.append("[minSize=").append(minSize);
+        s.append(",maxSize=").append(maxSize);
+        s.append(",idleTimeoutMilliseconds=").append(idleTimeoutMilliseconds);
+        s.append(",blockingTimeoutMilliseconds=").append(blockingTimeoutMilliseconds).append("]\n");
+        next.info(s);
     }
 
 }
