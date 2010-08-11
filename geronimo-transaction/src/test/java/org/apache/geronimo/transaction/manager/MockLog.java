@@ -33,9 +33,9 @@ import javax.transaction.xa.Xid;
  * */
 public class MockLog implements TransactionLog {
 
-    final Map prepared = new HashMap();
-    final List committed = new ArrayList();
-    final List rolledBack = new ArrayList();
+    final Map<Xid, Recovery.XidBranchesPair> prepared = new HashMap<Xid, Recovery.XidBranchesPair>();
+    final List<Xid> committed = new ArrayList<Xid>();
+    final List<Xid> rolledBack = new ArrayList<Xid>();
 
     public void begin(Xid xid) throws LogException {
     }
@@ -56,8 +56,8 @@ public class MockLog implements TransactionLog {
         rolledBack.add(xid);
     }
 
-    public Collection recover(XidFactory xidFactory) throws LogException {
-        Map copy = new HashMap(prepared);
+    public Collection<Recovery.XidBranchesPair> recover(XidFactory xidFactory) throws LogException {
+        Map<Xid, Recovery.XidBranchesPair> copy = new HashMap<Xid, Recovery.XidBranchesPair>(prepared);
         copy.keySet().removeAll(committed);
         copy.keySet().removeAll(rolledBack);
         return copy.values();

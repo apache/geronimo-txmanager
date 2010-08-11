@@ -49,8 +49,8 @@ public abstract class AbstractRecoveryTest extends TestCase {
 
     public void test2ResOnlineAfterRecoveryStart() throws Exception {
         Xid[] xids = getXidArray(XID_COUNT);
-        MockXAResource xares1 = new MockXAResource(RM1, xids);
-        MockXAResource xares2 = new MockXAResource(RM2, xids);
+        MockXAResource xares1 = new MockXAResource(RM1);
+        MockXAResource xares2 = new MockXAResource(RM2);
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
@@ -89,9 +89,9 @@ public abstract class AbstractRecoveryTest extends TestCase {
         tmp.addAll(xids23List);
         Xid[] xids3 = (Xid[]) tmp.toArray(new Xid[6]);
 
-        MockXAResource xares1 = new MockXAResource(RM1, xids1);
-        MockXAResource xares2 = new MockXAResource(RM2, xids2);
-        MockXAResource xares3 = new MockXAResource(RM3, xids3);
+        MockXAResource xares1 = new MockXAResource(RM1);
+        MockXAResource xares2 = new MockXAResource(RM2);
+        MockXAResource xares3 = new MockXAResource(RM3);
         MockTransactionInfo[] txInfos12 = makeTxInfos(xids12);
         addBranch(txInfos12, xares1);
         addBranch(txInfos12, xares2);
@@ -140,12 +140,13 @@ public abstract class AbstractRecoveryTest extends TestCase {
         return xids;
     }
 
-    private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) {
+    private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) throws XAException {
         for (int i = 0; i < txInfos.length; i++) {
             MockTransactionInfo txInfo = txInfos[i];
             Xid globalXid = txInfo.globalXid;
             Xid branchXid = xidFactory.createBranch(globalXid, branchCounter++);
-            txInfo.branches.add(new MockTransactionBranchInfo(xaRes.getName(), branchXid));
+            xaRes.start(branchXid, 0);
+            txInfo.branches.add(new TransactionBranchInfoImpl(branchXid, xaRes.getName()));
         }
     }
 
@@ -161,13 +162,12 @@ public abstract class AbstractRecoveryTest extends TestCase {
     private static class MockXAResource implements NamedXAResource {
 
         private final String name;
-        private final Xid[] xids;
-        private final List committed = new ArrayList();
-        private final List rolledBack = new ArrayList();
+        private final List<Xid> xids = new ArrayList<Xid>();
+        private final List<Xid> committed = new ArrayList<Xid>();
+        private final List<Xid> rolledBack = new ArrayList<Xid>();
 
-        public MockXAResource(String name, Xid[] xids) {
+        public MockXAResource(String name) {
             this.name = name;
-            this.xids = xids;
         }
 
         public String getName() {
@@ -197,7 +197,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         }
 
         public Xid[] recover(int flag) throws XAException {
-            return xids;
+            return xids.toArray(new Xid[xids.size()]);
         }
 
         public void rollback(Xid xid) throws XAException {
@@ -209,6 +209,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         }
 
         public void start(Xid xid, int flags) throws XAException {
+            xids.add(xid);
         }
 
         public List getCommitted() {
@@ -232,21 +233,4 @@ public abstract class AbstractRecoveryTest extends TestCase {
         }
     }
 
-    private static class MockTransactionBranchInfo implements TransactionBranchInfo {
-        private final String name;
-        private final Xid branchXid;
-
-        public MockTransactionBranchInfo(String name, Xid branchXid) {
-            this.name = name;
-            this.branchXid = branchXid;
-        }
-
-        public String getResourceName() {
-            return name;
-        }
-
-        public Xid getBranchXid() {
-            return branchXid;
-        }
-    }
 }

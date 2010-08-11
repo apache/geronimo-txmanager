@@ -40,6 +40,7 @@ public class RecoveryTest extends TestCase {
     private final String RM1 = "rm1";
     private final String RM2 = "rm2";
     private final String RM3 = "rm3";
+    private int count = 0;
 
     public void testCommittedRMToBeRecovered() throws Exception {
         MockLog mockLog = new MockLog();
@@ -48,7 +49,7 @@ public class RecoveryTest extends TestCase {
         // to recover. This means that the presumed abort protocol has failed
         // right after the commit of the RM and before the force-write of the
         // committed log record.
-        MockXAResource xares1 = new MockXAResource(RM1, new Xid[0]);
+        MockXAResource xares1 = new MockXAResource(RM1);
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         prepareLog(mockLog, txInfos);
@@ -58,7 +59,7 @@ public class RecoveryTest extends TestCase {
         assertTrue(recovery.getExternalXids().isEmpty());
         assertTrue(!recovery.localRecoveryComplete());
         recovery.recoverResourceManager(xares1);
-        assertEquals(0, xares1.committed.size());
+        assertEquals(1, xares1.committed.size());
         assertTrue(recovery.localRecoveryComplete());
         
     }
@@ -66,8 +67,8 @@ public class RecoveryTest extends TestCase {
     public void test2ResOnlineAfterRecoveryStart() throws Exception {
         MockLog mockLog = new MockLog();
         Xid[] xids = getXidArray(3);
-        MockXAResource xares1 = new MockXAResource(RM1, xids);
-        MockXAResource xares2 = new MockXAResource(RM2, xids);
+        MockXAResource xares1 = new MockXAResource(RM1);
+        MockXAResource xares2 = new MockXAResource(RM2);
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
@@ -86,10 +87,12 @@ public class RecoveryTest extends TestCase {
 
     }
 
-    private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) {
+    private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) throws XAException {
         for (int i = 0; i < txInfos.length; i++) {
             MockTransactionInfo txInfo = txInfos[i];
-            txInfo.branches.add(new MockTransactionBranchInfo(xaRes.getName()));
+            Xid xid = xidFactory.createBranch(txInfo.globalXid, count++);
+            xaRes.start(xid, 0);
+            txInfo.branches.add(new TransactionBranchInfoImpl(xid, xaRes.getName()));
         }
     }
 
@@ -97,7 +100,7 @@ public class RecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos = new MockTransactionInfo[xids.length];
         for (int i = 0; i < xids.length; i++) {
             Xid xid = xids[i];
-            txInfos[i] = new MockTransactionInfo(xid, new ArrayList());
+            txInfos[i] = new MockTransactionInfo(xid, new ArrayList<TransactionBranchInfo>());
         }
         return txInfos;
     }
@@ -123,9 +126,9 @@ public class RecoveryTest extends TestCase {
         tmp.addAll(xids23List);
         Xid[] xids3 = (Xid[]) tmp.toArray(new Xid[6]);
 
-        MockXAResource xares1 = new MockXAResource(RM1, xids1);
-        MockXAResource xares2 = new MockXAResource(RM2, xids2);
-        MockXAResource xares3 = new MockXAResource(RM3, xids3);
+        MockXAResource xares1 = new MockXAResource(RM1);
+        MockXAResource xares2 = new MockXAResource(RM2);
+        MockXAResource xares3 = new MockXAResource(RM3);
         MockTransactionInfo[] txInfos12 = makeTxInfos(xids12);
         addBranch(txInfos12, xares1);
         addBranch(txInfos12, xares2);
@@ -174,13 +177,12 @@ public class RecoveryTest extends TestCase {
     private static class MockXAResource implements NamedXAResource {
 
         private final String name;
-        private final Xid[] xids;
-        private final List committed = new ArrayList();
-        private final List rolledBack = new ArrayList();
+        private final List<Xid> xids = new ArrayList<Xid>();
+        private final List<Xid> committed = new ArrayList<Xid>();
+        private final List<Xid> rolledBack = new ArrayList<Xid>();
 
-        public MockXAResource(String name, Xid[] xids) {
+        public MockXAResource(String name) {
             this.name = name;
-            this.xids = xids;
         }
 
         public String getName() {
@@ -210,7 +212,7 @@ public class RecoveryTest extends TestCase {
         }
 
         public Xid[] recover(int flag) throws XAException {
-            return xids;
+            return xids.toArray(new Xid[xids.size()]);
         }
 
         public void rollback(Xid xid) throws XAException {
@@ -222,6 +224,7 @@ public class RecoveryTest extends TestCase {
         }
 
         public void start(Xid xid, int flags) throws XAException {
+            xids.add(xid);
         }
 
         public List getCommitted() {
@@ -237,27 +240,12 @@ public class RecoveryTest extends TestCase {
 
     private static class MockTransactionInfo {
         private Xid globalXid;
-        private List branches;
+        private List<TransactionBranchInfo> branches;
 
-        public MockTransactionInfo(Xid globalXid, List branches) {
+        public MockTransactionInfo(Xid globalXid, List<TransactionBranchInfo> branches) {
             this.globalXid = globalXid;
             this.branches = branches;
         }
     }
 
-    private static class MockTransactionBranchInfo implements TransactionBranchInfo {
-        private String name;
-
-        public MockTransactionBranchInfo(String name) {
-            this.name = name;
-        }
-
-        public String getResourceName() {
-            return name;
-        }
-
-        public Xid getBranchXid() {
-            return null;
-        }
-    }
 }
