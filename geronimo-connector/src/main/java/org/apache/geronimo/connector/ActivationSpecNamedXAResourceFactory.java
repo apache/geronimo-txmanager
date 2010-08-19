@@ -51,7 +51,7 @@ public class ActivationSpecNamedXAResourceFactory implements NamedXAResourceFact
     public NamedXAResource getNamedXAResource() throws SystemException {
         try {
             XAResource[] xaResources = resourceAdapter.getXAResources(new ActivationSpec[]{activationSpec});
-            if (xaResources == null || xaResources.length == 0) {
+            if (xaResources == null || xaResources.length == 0 || xaResources[0] == null) {
                 return null;
             }
             return new WrapperNamedXAResource(xaResources[0], name);
