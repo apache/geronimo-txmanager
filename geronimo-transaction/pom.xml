@@ -31,7 +31,7 @@
     <artifactId>geronimo-transaction</artifactId>
     <name>Geronimo TxManager :: Transaction</name>
     <packaging>bundle</packaging>
-    <description>Geronimo Transaction Manager</description>
+    <description>Apache Geronimo Transaction Manager</description>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>

@@ -31,7 +31,7 @@
     <artifactId>geronimo-connector</artifactId>
     <name>Geronimo TxManager :: Connector</name>
     <packaging>bundle</packaging>
-    <description>Geronimo J2CA Connector Framework</description>
+    <description>Apache Geronimo J2CA Connector Framework</description>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
