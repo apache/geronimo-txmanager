@@ -22,12 +22,8 @@ package org.apache.geronimo.transaction.manager;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.TimerTask;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
 import javax.transaction.Status;
-import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -62,8 +58,8 @@ public class CommitTask implements Runnable {
         synchronized (this) {
             status = Status.STATUS_COMMITTING;
         }
-        for (Iterator i = rms.iterator(); i.hasNext();) {
-            TransactionBranch manager = (TransactionBranch) i.next();
+        for (Iterator<TransactionBranch> i = rms.iterator(); i.hasNext();) {
+            TransactionBranch manager = i.next();
             try {
                 try {
                     manager.getCommitter().commit(manager.getBranchId(), false);
@@ -106,7 +102,7 @@ public class CommitTask implements Runnable {
             }
         }
         //if all resources were read only, we didn't write a prepare record.
-        if (rms.isEmpty() && status == Status.STATUS_COMMITTED) {
+        if (rms.isEmpty() && status == Status.STATUS_COMMITTING) {
             try {
                 txLog.commit(xid, logMark);
                 synchronized (this) {
