@@ -175,7 +175,7 @@ public class TransactionImpl implements Transaction {
         }
 
         try {
-            TransactionBranch manager = (TransactionBranch) suspendedXaResources.remove(xaRes);
+            TransactionBranch manager = suspendedXaResources.remove(xaRes);
             if (manager != null) {
                 //we know about this one, it was suspended
                 xaRes.start(manager.getBranchId(), XAResource.TMRESUME);
@@ -230,13 +230,13 @@ public class TransactionImpl implements Transaction {
             default:
                 throw new IllegalStateException("Status is " + getStateString(status));
         }
-        TransactionBranch manager = (TransactionBranch) activeXaResources.remove(xaRes);
+        TransactionBranch manager = activeXaResources.remove(xaRes);
         if (manager == null) {
             if (flag == XAResource.TMSUSPEND) {
                 throw new IllegalStateException("trying to suspend an inactive xaresource: " + xaRes);
             }
             //not active, and we are not trying to suspend.  We must be ending tx.
-            manager = (TransactionBranch) suspendedXaResources.remove(xaRes);
+            manager = suspendedXaResources.remove(xaRes);
             if (manager == null) {
                 throw new IllegalStateException("Resource not known to transaction: " + xaRes);
             }
@@ -263,7 +263,7 @@ public class TransactionImpl implements Transaction {
             if (TransactionTimer.getCurrentTime() > timeout) {
                 status = Status.STATUS_MARKED_ROLLBACK;
                 timedout = true;
-            } 
+            }
 
             if (status == Status.STATUS_MARKED_ROLLBACK) {
                 rollbackResourcesDuringCommit(resourceManagers, false);
@@ -299,11 +299,11 @@ public class TransactionImpl implements Transaction {
 
             // one-phase
             if (resourceManagers.size() == 1) {
-                TransactionBranch manager = (TransactionBranch) resourceManagers.getFirst();
+                TransactionBranch manager = resourceManagers.getFirst();
                 commitResource(manager);
                 return;
-            } 
-            
+            }
+
             boolean willCommit = false;
             try {
                 // two-phase
@@ -312,12 +312,19 @@ public class TransactionImpl implements Transaction {
                 rollbackResources(resourceManagers);
                 throw e;
             }
-            
+
             // notify the RMs
             if (willCommit) {
+                //Re-check whether there are still left resourceMangers, as we might remove those Read-Only Resource in the voting process
+                if (resourceManagers.size() == 0) {
+                    synchronized (this) {
+                        status = Status.STATUS_COMMITTED;
+                    }
+                    return;
+                }
                 commitResources(resourceManagers);
             } else {
-                // set everRollback to true here because the rollback here is caused by 
+                // set everRollback to true here because the rollback here is caused by
                 // XAException during the above internalPrepare
                 rollbackResourcesDuringCommit(resourceManagers, true);
             }
@@ -418,19 +425,19 @@ public class TransactionImpl implements Transaction {
                     rms.remove();
                 }
             } catch (XAException e) {
-                if (e.errorCode == XAException.XAER_RMERR 
+                if (e.errorCode == XAException.XAER_RMERR
                         || e.errorCode == XAException.XAER_PROTO
                         || e.errorCode == XAException.XAER_INVAL) {
                     throw (SystemException) new SystemException("Error during prepare; transaction was rolled back").initCause(e);
                 }
                 synchronized (this) {
                     status = Status.STATUS_MARKED_ROLLBACK;
-                    /* Per JTA spec,  If the resource manager wants to roll back the transaction, 
+                    /* Per JTA spec,  If the resource manager wants to roll back the transaction,
                     it should do so by throwing an appropriate XAException in the prepare method.
                     Also per OTS spec:
-                    The resource can return VoteRollback under any circumstances, including not having 
-                    any knowledge about the transaction (which might happen after a crash). If this 
-                    response is returned, the transaction must be rolled back. Furthermore, the Transaction 
+                    The resource can return VoteRollback under any circumstances, including not having
+                    any knowledge about the transaction (which might happen after a crash). If this
+                    response is returned, the transaction must be rolled back. Furthermore, the Transaction
                     Service is not required to perform any additional operations on this resource.*/
                     //rms.remove();
                     break;
@@ -593,12 +600,12 @@ public class TransactionImpl implements Transaction {
                         // let's not set the cause here
                         log.info("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
                         manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_RBROLLBACK 
-                            || e.errorCode == XAException.XAER_RMERR 
+                    } else if (e.errorCode == XAException.XA_RBROLLBACK
+                            || e.errorCode == XAException.XAER_RMERR
                             || e.errorCode == XAException.XAER_NOTA
                             || e.errorCode == XAException.XAER_RMFAIL) {
                         // let's not set the cause here because we expect the transaction to be rolled back eventually
-                        // TODO: for RMFAIL, it means resource unavailable temporarily.  
+                        // TODO: for RMFAIL, it means resource unavailable temporarily.
                         // do we need keep sending request to resource to make sure the roll back completes?
                     } else if (cause == null) {
                         cause = new SystemException(e.errorCode);
@@ -606,8 +613,8 @@ public class TransactionImpl implements Transaction {
                 }
             }
         } catch (XAException e) {
-            throw (SystemException) new SystemException("Error during rolling back").initCause(e);            
-        }            
+            throw (SystemException) new SystemException("Error during rolling back").initCause(e);
+        }
 
         synchronized (this) {
             status = Status.STATUS_ROLLEDBACK;
@@ -644,14 +651,14 @@ public class TransactionImpl implements Transaction {
                         log.error("Transaction has been heuristically committed " + manager.getCommitter() + "; continuing with rollback", e);
                         cause = e;
                         manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_RBROLLBACK 
+                    } else if (e.errorCode == XAException.XA_RBROLLBACK
                             || e.errorCode == XAException.XAER_RMERR
                             || e.errorCode == XAException.XAER_NOTA
                             || e.errorCode == XAException.XAER_RMFAIL) {
                         // XAException.XA_RBROLLBACK during commit/rollback, thus RollbackException is expected
                         // XAException.XAER_RMERR means transaction branch error and transaction has been rolled back
                         // let's not set the cause here because we expect the transaction to be rolled back eventually
-                        // TODO: for RMFAIL, it means resource unavailable temporarily.  
+                        // TODO: for RMFAIL, it means resource unavailable temporarily.
                         // do we need keep sending request to resource to make sure the roll back completes?
                     } else if (cause == null) {
                         cause = e;
@@ -659,13 +666,13 @@ public class TransactionImpl implements Transaction {
                 }
             }
         } catch (XAException e) {
-            throw (SystemException) new SystemException("System error during commit/rolling back").initCause(e);            
+            throw (SystemException) new SystemException("System error during commit/rolling back").initCause(e);
         }
-        
+
         synchronized (this) {
             status = Status.STATUS_ROLLEDBACK;
         }
-        
+
         if (cause == null) {
             throw (RollbackException) new RollbackException("Unable to commit: transaction marked for rollback").initCause(cause);
         } else {
@@ -673,12 +680,12 @@ public class TransactionImpl implements Transaction {
                 throw (HeuristicMixedException) new HeuristicMixedException("HeuristicMixed error during commit/rolling back").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
                 throw (HeuristicMixedException) new HeuristicMixedException("HeuristicMixed error during commit/rolling back").initCause(cause);
-            } else {            
+            } else {
                 throw (SystemException) new SystemException("System Error during commit/rolling back").initCause(cause);
-            } 
+            }
         }
     }
-    
+
     private void commitResource(TransactionBranch manager) throws RollbackException, HeuristicRollbackException, HeuristicMixedException, SystemException{
         XAException cause = null;
         try {
@@ -693,7 +700,7 @@ public class TransactionImpl implements Transaction {
                 synchronized (this) {
                     status = Status.STATUS_ROLLEDBACK;
                 }
-                
+
                 if (e.errorCode == XAException.XA_HEURRB) {
                     cause = e;
                     manager.getCommitter().forget(manager.getBranchId());
@@ -706,20 +713,20 @@ public class TransactionImpl implements Transaction {
                     // let's not throw an exception as the transaction has been committed
                     log.info("Transaction has been heuristically committed");
                     manager.getCommitter().forget(manager.getBranchId());
-                } else if (e.errorCode == XAException.XA_RBROLLBACK 
-                        || e.errorCode == XAException.XAER_RMERR 
+                } else if (e.errorCode == XAException.XA_RBROLLBACK
+                        || e.errorCode == XAException.XAER_RMERR
                         || e.errorCode == XAException.XAER_NOTA) {
-                    // Per XA spec, XAException.XAER_RMERR from commit means An error occurred in 
-                    // committing the work performed on behalf of the transaction branch 
-                    // and the branch's work has been rolled back. 
+                    // Per XA spec, XAException.XAER_RMERR from commit means An error occurred in
+                    // committing the work performed on behalf of the transaction branch
+                    // and the branch's work has been rolled back.
                     // XAException.XAER_NOTA:  assume the DB took a unilateral rollback decision and forgot the transaction
                     log.info("Transaction has been rolled back");
                     cause = e;
-                    // throw (RollbackException) new RollbackException("Error during one-phase commit").initCause(e);                        
+                    // throw (RollbackException) new RollbackException("Error during one-phase commit").initCause(e);
                 } else {
                     cause = e;
                     //throw (SystemException) new SystemException("Error during one-phase commit").initCause(e);
-                }                    
+                }
             }
         } catch (XAException e) {
             if (e.errorCode == XAException.XAER_NOTA) {
@@ -729,22 +736,22 @@ public class TransactionImpl implements Transaction {
                 throw (SystemException) new SystemException("Error during one phase commit").initCause(e);
             }
         }
-        
+
         if (cause != null) {
             if (cause.errorCode == XAException.XA_HEURRB) {
                 throw (HeuristicRollbackException) new HeuristicRollbackException("Error during two phase commit").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
                 throw (HeuristicMixedException) new HeuristicMixedException("Error during two phase commit").initCause(cause);
-            } else if (cause.errorCode == XAException.XA_RBROLLBACK 
-                    || cause.errorCode == XAException.XAER_RMERR 
+            } else if (cause.errorCode == XAException.XA_RBROLLBACK
+                    || cause.errorCode == XAException.XAER_RMERR
                     || cause.errorCode == XAException.XAER_NOTA) {
                 throw (RollbackException) new RollbackException("Error during two phase commit").initCause(cause);
             } else {
                 throw (SystemException) new SystemException("Error during two phase commit").initCause(cause);
-            } 
+            }
         }
     }
-    
+
     private void commitResources(List<TransactionBranch> rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
         CommitTask commitTask = new CommitTask(xid, rms, logMark, retryScheduler, txnLog);
         synchronized (this) {
