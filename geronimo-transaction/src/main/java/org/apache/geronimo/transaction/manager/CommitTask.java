@@ -101,8 +101,8 @@ public class CommitTask implements Runnable {
                 }
             }
         }
-        //if all resources were read only, we didn't write a prepare record.
-        if (rms.isEmpty() && status == Status.STATUS_COMMITTING) {
+
+        if (rms.isEmpty()) {
             try {
                 txLog.commit(xid, logMark);
                 synchronized (this) {
