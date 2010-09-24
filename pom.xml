@@ -30,7 +30,7 @@
 
     <groupId>org.apache.geronimo.components</groupId>
     <artifactId>geronimo-txmanager-parent</artifactId>
-    <version>2.2-SNAPSHOT</version>
+    <version>2.2</version>
     <packaging>pom</packaging>
     <name>Geronimo TxManager</name>
     
@@ -39,9 +39,9 @@
     </description>
     
     <scm>
-        <connection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.2</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.2</developerConnection>
-        <url>https://svn.apache.org/repos/asf/geronimo/components/txmanager/branches/geronimo-txmanager-parent-2.2</url>
+        <connection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/tags/geronimo-txmanager-parent-2.2</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/tags/geronimo-txmanager-parent-2.2</developerConnection>
+        <url>https://svn.apache.org/repos/asf/geronimo/components/txmanager/tags/geronimo-txmanager-parent-2.2</url>
     </scm>
     
     <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
