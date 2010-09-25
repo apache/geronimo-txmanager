@@ -47,10 +47,12 @@ public class RecoverTask implements Runnable {
     public void run() {
         try {
             NamedXAResource namedXAResource = namedXAResourceFactory.getNamedXAResource();
-            try {
-                recovery.recoverResourceManager(namedXAResource);
-            } finally {
-                namedXAResourceFactory.returnNamedXAResource(namedXAResource);
+            if (namedXAResource != null) {
+                try {
+                    recovery.recoverResourceManager(namedXAResource);
+                } finally {
+                    namedXAResourceFactory.returnNamedXAResource(namedXAResource);
+                }
             }
             return;
         } catch (XAException e) {
