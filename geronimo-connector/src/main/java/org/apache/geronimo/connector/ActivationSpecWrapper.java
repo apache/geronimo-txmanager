@@ -17,10 +17,17 @@
 
 package org.apache.geronimo.connector;
 
+import java.util.Set; 
+
 import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
 import javax.resource.spi.ResourceAdapter;
+import javax.resource.spi.InvalidPropertyException; 
 import javax.resource.spi.endpoint.MessageEndpointFactory;
+import javax.validation.ConstraintViolation; 
+import javax.validation.ConstraintViolationException; 
+import javax.validation.Validator; 
+import javax.validation.ValidatorFactory; 
 
 /**
  * Wrapper for ActivationSpec instances.
@@ -35,6 +42,9 @@ public class ActivationSpecWrapper {
 
     private final ResourceAdapterWrapper resourceAdapterWrapper;
     private final String containerId;
+    private final ValidatorFactory validatorFactory; 
+    // indicates we've validated the spec on the first usage. 
+    private boolean validated = false; 
 
     /**
      * Default constructor required when a class is used as a GBean Endpoint.
@@ -43,6 +53,8 @@ public class ActivationSpecWrapper {
         activationSpec = null;
         containerId = null;
         resourceAdapterWrapper = null;
+        validatorFactory = null; 
+        validated = false; 
     }
 
     /**
@@ -55,19 +67,24 @@ public class ActivationSpecWrapper {
     public ActivationSpecWrapper(final String activationSpecClass,
                                  final String containerId,
                                  final ResourceAdapterWrapper resourceAdapterWrapper,
-                                 final ClassLoader cl) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+                                 final ClassLoader cl, 
+                                 final ValidatorFactory validatorFactory) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         Class clazz = cl.loadClass(activationSpecClass);
         this.activationSpec = (ActivationSpec) clazz.newInstance();
         this.containerId = containerId;
         this.resourceAdapterWrapper = resourceAdapterWrapper;
+        this.validatorFactory = validatorFactory; 
+        this.validated = false; 
     }
 
     /**
      */
-    public ActivationSpecWrapper(ActivationSpec activationSpec, ResourceAdapterWrapper resourceAdapterWrapper)  {
+    public ActivationSpecWrapper(ActivationSpec activationSpec, ResourceAdapterWrapper resourceAdapterWrapper, ValidatorFactory validatorFactory)  {
         this.activationSpec = activationSpec;
         this.resourceAdapterWrapper = resourceAdapterWrapper;
         this.containerId = null;
+        this.validatorFactory = validatorFactory; 
+        this.validated = false; 
     }
 
     /**
@@ -90,6 +107,8 @@ public class ActivationSpecWrapper {
 
     //GBeanLifecycle implementation
     public void activate(final MessageEndpointFactory messageEndpointFactory) throws ResourceException {
+        checkConstraints(activationSpec);
+        
         ResourceAdapter resourceAdapter = activationSpec.getResourceAdapter();
         if (resourceAdapter == null) {
             resourceAdapterWrapper.registerResourceAdapterAssociation(activationSpec);
@@ -108,5 +127,33 @@ public class ActivationSpecWrapper {
             throw new IllegalStateException("ActivationSpec was never registered with ResourceAdapter");
         }
     }
+    
+    /**
+     * Validate an ActivationSpec instance on the first usage. 
+     * 
+     * @param spec   The spec instance to validate.
+     */
+    private void checkConstraints(ActivationSpec spec) throws InvalidPropertyException {
+        if (!validated) {
+            // There are two potential validations, self validation via the 
+            // validate() method and container-driven validation using bean validation. 
+            try {
+                spec.validate();
+            } catch (UnsupportedOperationException uoe) {
+                // ignore if not implemented. 
+            }
 
+            // if we have a validator factory at this point, then validate 
+            // the resource adaptor instance 
+            if (validatorFactory != null) {
+                Validator validator = validatorFactory.getValidator(); 
+
+                Set generalSet = validator.validate(spec);
+                if (!generalSet.isEmpty()) {
+                    throw new ConstraintViolationException("Constraint violation for ActitvationSpec", generalSet); 
+                }
+            }
+            validated = true; 
+        }
+    }
 }

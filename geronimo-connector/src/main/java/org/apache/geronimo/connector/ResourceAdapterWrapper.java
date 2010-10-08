@@ -18,6 +18,7 @@
 package org.apache.geronimo.connector;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
@@ -28,6 +29,10 @@ import javax.resource.spi.ResourceAdapterInternalException;
 import javax.resource.spi.endpoint.MessageEndpointFactory;
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAResource;
+import javax.validation.ConstraintViolation; 
+import javax.validation.ConstraintViolationException; 
+import javax.validation.Validator; 
+import javax.validation.ValidatorFactory; 
 
 import org.apache.geronimo.transaction.manager.NamedXAResource;
 import org.apache.geronimo.transaction.manager.NamedXAResourceFactory;
@@ -53,6 +58,8 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
     private final Map<String,String> messageListenerToActivationSpecMap;
 
     private final RecoverableTransactionManager transactionManager;
+    
+    private final ValidatorFactory validatorFactory; 
 
 
     /**
@@ -65,6 +72,7 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
         this.resourceAdapter = null;
         this.messageListenerToActivationSpecMap = null;
         this.transactionManager = null;
+        this.validatorFactory = null; 
     }
 
     public ResourceAdapterWrapper(String name,
@@ -72,7 +80,8 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
             Map<String, String> messageListenerToActivationSpecMap,
             BootstrapContext bootstrapContext,
             RecoverableTransactionManager transactionManager,
-            ClassLoader cl) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+            ClassLoader cl, 
+            ValidatorFactory validatorFactory) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         this.name = name;
         this.resourceAdapterClass = resourceAdapterClass;
         this.bootstrapContext = bootstrapContext;
@@ -80,15 +89,17 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
         resourceAdapter = (ResourceAdapter) clazz.newInstance();
         this.messageListenerToActivationSpecMap = messageListenerToActivationSpecMap;
         this.transactionManager = transactionManager;
+        this.validatorFactory = validatorFactory; 
     }
     
-    public ResourceAdapterWrapper(String name, ResourceAdapter resourceAdapter, Map<String, String> messageListenerToActivationSpecMap, BootstrapContext bootstrapContext, RecoverableTransactionManager transactionManager) {
+    public ResourceAdapterWrapper(String name, ResourceAdapter resourceAdapter, Map<String, String> messageListenerToActivationSpecMap, BootstrapContext bootstrapContext, RecoverableTransactionManager transactionManager, ValidatorFactory validatorFactory) {
         this.name = name;
         this.resourceAdapterClass = resourceAdapter.getClass().getName();
         this.bootstrapContext = bootstrapContext;
         this.resourceAdapter = resourceAdapter;
         this.messageListenerToActivationSpecMap = messageListenerToActivationSpecMap;
         this.transactionManager = transactionManager;
+        this.validatorFactory = validatorFactory; 
     }
 
     public String getName() {
@@ -141,6 +152,16 @@ public class ResourceAdapterWrapper implements ResourceAdapter {
     }
 
     public void doStart() throws Exception {
+        // if we have a validator factory at this point, then validate 
+        // the resource adaptor instance 
+        if (validatorFactory != null) {
+            Validator validator = validatorFactory.getValidator(); 
+            
+            Set generalSet = validator.validate(resourceAdapter);
+            if (!generalSet.isEmpty()) {
+                throw new ConstraintViolationException("Constraint violation for ResourceAdapter " + resourceAdapterClass, generalSet); 
+            }
+        }
         resourceAdapter.start(bootstrapContext);
     }
 
