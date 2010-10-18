@@ -48,10 +48,8 @@ import org.slf4j.LoggerFactory;
 public class TransactionImpl implements Transaction {
     private static final Logger log = LoggerFactory.getLogger("Transaction");
 
-    private final XidFactory xidFactory;
+    private final TransactionManagerImpl txManager;
     private final Xid xid;
-    private final TransactionLog txnLog;
-    private final RetryScheduler retryScheduler;
     private final long timeout;
     private final List<Synchronization> syncList = new ArrayList<Synchronization>(5);
     private final List<Synchronization> interposedSyncList = new ArrayList<Synchronization>(3);
@@ -63,18 +61,16 @@ public class TransactionImpl implements Transaction {
 
     private final Map<Object, Object> resources = new HashMap<Object, Object>();
 
-    TransactionImpl(XidFactory xidFactory, TransactionLog txnLog, RetryScheduler retryScheduler, long transactionTimeoutMilliseconds) throws SystemException {
-        this(xidFactory.createXid(), xidFactory, txnLog, retryScheduler, transactionTimeoutMilliseconds);
+    TransactionImpl(TransactionManagerImpl txManager, long transactionTimeoutMilliseconds) throws SystemException {
+        this(txManager.getXidFactory().createXid(), txManager, transactionTimeoutMilliseconds);
     }
 
-    TransactionImpl(Xid xid, XidFactory xidFactory, TransactionLog txnLog, RetryScheduler retryScheduler, long transactionTimeoutMilliseconds) throws SystemException {
-        this.xidFactory = xidFactory;
-        this.txnLog = txnLog;
-        this.retryScheduler = retryScheduler;
+    TransactionImpl(Xid xid, TransactionManagerImpl txManager, long transactionTimeoutMilliseconds) throws SystemException {
+        this.txManager = txManager;
         this.xid = xid;
         this.timeout = transactionTimeoutMilliseconds + TransactionTimer.getCurrentTime();
         try {
-            txnLog.begin(xid);
+            txManager.getTransactionLog().begin(xid);
         } catch (LogException e) {
             status = Status.STATUS_MARKED_ROLLBACK;
             SystemException ex = new SystemException("Error logging begin; transaction marked for roll back)");
@@ -85,11 +81,9 @@ public class TransactionImpl implements Transaction {
     }
 
     //reconstruct a tx for an external tx found in recovery
-    public TransactionImpl(Xid xid, TransactionLog txLog, RetryScheduler retryScheduler) {
-        this.xidFactory = null;
-        this.txnLog = txLog;
+    public TransactionImpl(Xid xid, TransactionManagerImpl txManager) {
+        this.txManager = txManager;
         this.xid = xid;
-        this.retryScheduler = retryScheduler;
         status = Status.STATUS_PREPARED;
         //TODO is this a good idea?
         this.timeout = Long.MAX_VALUE;
@@ -204,8 +198,10 @@ public class TransactionImpl implements Transaction {
                 }
             }
             //we know nothing about this XAResource or resource manager
-            Xid branchId = xidFactory.createBranch(xid, resourceManagers.size() + 1);
+            Xid branchId = txManager.getXidFactory().createBranch(xid, resourceManagers.size() + 1);
             xaRes.start(branchId, XAResource.TMNOFLAGS);
+            //Set the xaresource timeout in seconds to match the time left in this tx.
+            xaRes.setTransactionTimeout((int)(timeout - TransactionTimer.getCurrentTime())/1000);
             activeXaResources.put(xaRes, addBranchXid(xaRes, branchId));
             return true;
         } catch (XAException e) {
@@ -266,7 +262,7 @@ public class TransactionImpl implements Transaction {
             }
 
             if (status == Status.STATUS_MARKED_ROLLBACK) {
-                rollbackResourcesDuringCommit(resourceManagers, false);
+                rollbackResources(resourceManagers, false);
                 if (timedout) {
                     throw new RollbackException("Unable to commit: Transaction timeout");
                 } else {
@@ -309,7 +305,7 @@ public class TransactionImpl implements Transaction {
                 // two-phase
                 willCommit = internalPrepare();
             } catch (SystemException e) {
-                rollbackResources(resourceManagers);
+                rollbackResources(resourceManagers, false);
                 throw e;
             }
 
@@ -326,7 +322,8 @@ public class TransactionImpl implements Transaction {
             } else {
                 // set everRollback to true here because the rollback here is caused by
                 // XAException during the above internalPrepare
-                rollbackResourcesDuringCommit(resourceManagers, true);
+                rollbackResources(resourceManagers, true);
+                throw new RollbackException("transaction rolled back due to problems in prepare");
             }
         } finally {
             afterCompletion();
@@ -365,7 +362,11 @@ public class TransactionImpl implements Transaction {
                     result = XAResource.XA_OK;
                 }
             } else {
-                rollbackResources(rms);
+                try {
+                    rollbackResources(rms, false);
+                } catch (HeuristicMixedException e) {
+                    throw (SystemException)new SystemException("Unable to commit and heuristic exception during rollback").initCause(e);
+                }
                 throw new RollbackException("Unable to commit");
             }
         } finally {
@@ -456,10 +457,10 @@ public class TransactionImpl implements Transaction {
         // log our decision
         if (willCommit && !resourceManagers.isEmpty()) {
             try {
-                logMark = txnLog.prepare(xid, resourceManagers);
+                logMark = txManager.getTransactionLog().prepare(xid, resourceManagers);
             } catch (LogException e) {
                 try {
-                    rollbackResources(resourceManagers);
+                    rollbackResources(resourceManagers, false);
                 } catch (Exception se) {
                     log.error("Unable to rollback after failure to log prepare", se.getCause());
                 }
@@ -486,19 +487,10 @@ public class TransactionImpl implements Transaction {
 
         endResources();
         try {
-            rollbackResources(rms);
-            //only write rollback record if we have already written prepare record.
-            if (logMark != null) {
-                try {
-                    txnLog.rollback(xid, logMark);
-                } catch (LogException e) {
-                    try {
-                        rollbackResources(rms);
-                    } catch (Exception se) {
-                        log.error("Unable to rollback after failure to log decision", se.getCause());
-                    }
-                    throw (SystemException) new SystemException("Error logging rollback").initCause(e);
-                }
+            try {
+                rollbackResources(rms, false);
+            } catch (HeuristicMixedException e) {
+                throw (SystemException)new SystemException("Unable to roll back due to heuristics").initCause(e);
             }
         } finally {
             afterCompletion();
@@ -584,98 +576,19 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private void rollbackResources(List<TransactionBranch> rms) throws SystemException {
-        SystemException cause = null;
+    private void rollbackResources(List<TransactionBranch> rms, boolean everRb) throws HeuristicMixedException, SystemException {
+        RollbackTask rollbackTask = new RollbackTask(xid, rms, logMark, txManager);
         synchronized (this) {
             status = Status.STATUS_ROLLING_BACK;
         }
-        try {
-            for (Iterator i = rms.iterator(); i.hasNext();) {
-                TransactionBranch manager = (TransactionBranch) i.next();
-                try {
-                    manager.getCommitter().rollback(manager.getBranchId());
-                } catch (XAException e) {
-                    log.error("Unexpected exception rolling back " + manager.getCommitter() + "; continuing with rollback", e);
-                    if (e.errorCode == XAException.XA_HEURRB) {
-                        // let's not set the cause here
-                        log.info("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_RBROLLBACK
-                            || e.errorCode == XAException.XAER_RMERR
-                            || e.errorCode == XAException.XAER_NOTA
-                            || e.errorCode == XAException.XAER_RMFAIL) {
-                        // let's not set the cause here because we expect the transaction to be rolled back eventually
-                        // TODO: for RMFAIL, it means resource unavailable temporarily.
-                        // do we need keep sending request to resource to make sure the roll back completes?
-                    } else if (cause == null) {
-                        cause = new SystemException(e.errorCode);
-                    }
-                }
-            }
-        } catch (XAException e) {
-            throw (SystemException) new SystemException("Error during rolling back").initCause(e);
-        }
-
+        rollbackTask.run();
         synchronized (this) {
-            status = Status.STATUS_ROLLEDBACK;
+            status = rollbackTask.getStatus();
         }
+        XAException cause = rollbackTask.getCause();
+        boolean everRolledback = everRb || rollbackTask.isEverRolledBack();
+
         if (cause != null) {
-            throw cause;
-        }
-    }
-
-    private void rollbackResourcesDuringCommit(List<TransactionBranch> rms, boolean everRb) throws HeuristicMixedException, RollbackException, SystemException {
-        XAException cause = null;
-        boolean everRolledback = everRb;
-        synchronized (this) {
-            status = Status.STATUS_ROLLING_BACK;
-        }
-        try {
-            for (Iterator i = rms.iterator(); i.hasNext();) {
-                TransactionBranch manager = (TransactionBranch) i.next();
-                try {
-                    manager.getCommitter().rollback(manager.getBranchId());
-                    everRolledback = true;
-                } catch (XAException e) {
-                    if (e.errorCode == XAException.XA_HEURRB) {
-                        // let's not set the cause here as the resulting behavior is same as requested behavior
-                        log.error("Transaction has been heuristically rolled back " + manager.getCommitter() + "; continuing with rollback", e);
-                        everRolledback = true;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_HEURMIX) {
-                        log.error("Transaction has been heuristically committed and rolled back " + manager.getCommitter() + "; continuing with rollback", e);
-                        cause = e;
-                        everRolledback = true;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_HEURCOM) {
-                        log.error("Transaction has been heuristically committed " + manager.getCommitter() + "; continuing with rollback", e);
-                        cause = e;
-                        manager.getCommitter().forget(manager.getBranchId());
-                    } else if (e.errorCode == XAException.XA_RBROLLBACK
-                            || e.errorCode == XAException.XAER_RMERR
-                            || e.errorCode == XAException.XAER_NOTA
-                            || e.errorCode == XAException.XAER_RMFAIL) {
-                        // XAException.XA_RBROLLBACK during commit/rollback, thus RollbackException is expected
-                        // XAException.XAER_RMERR means transaction branch error and transaction has been rolled back
-                        // let's not set the cause here because we expect the transaction to be rolled back eventually
-                        // TODO: for RMFAIL, it means resource unavailable temporarily.
-                        // do we need keep sending request to resource to make sure the roll back completes?
-                    } else if (cause == null) {
-                        cause = e;
-                    }
-                }
-            }
-        } catch (XAException e) {
-            throw (SystemException) new SystemException("System error during commit/rolling back").initCause(e);
-        }
-
-        synchronized (this) {
-            status = Status.STATUS_ROLLEDBACK;
-        }
-
-        if (cause == null) {
-            throw (RollbackException) new RollbackException("Unable to commit: transaction marked for rollback").initCause(cause);
-        } else {
             if (cause.errorCode == XAException.XA_HEURCOM && everRolledback) {
                 throw (HeuristicMixedException) new HeuristicMixedException("HeuristicMixed error during commit/rolling back").initCause(cause);
             } else if (cause.errorCode == XAException.XA_HEURMIX) {
@@ -753,7 +666,7 @@ public class TransactionImpl implements Transaction {
     }
 
     private void commitResources(List<TransactionBranch> rms) throws HeuristicRollbackException, HeuristicMixedException, SystemException {
-        CommitTask commitTask = new CommitTask(xid, rms, logMark, retryScheduler, txnLog);
+        CommitTask commitTask = new CommitTask(xid, rms, logMark, txManager);
         synchronized (this) {
             status = Status.STATUS_COMMITTING;
         }
@@ -855,5 +768,16 @@ public class TransactionImpl implements Transaction {
         }
     }
 
+    static class ReturnableTransactionBranch extends TransactionBranch {
+        private final NamedXAResourceFactory namedXAResourceFactory;
 
+        ReturnableTransactionBranch(Xid branchId, NamedXAResourceFactory namedXAResourceFactory) throws SystemException {
+            super(namedXAResourceFactory.getNamedXAResource(), branchId);
+            this.namedXAResourceFactory = namedXAResourceFactory;
+        }
+
+        public void returnXAResource() {
+            namedXAResourceFactory.returnNamedXAResource((NamedXAResource) getCommitter());
+        }
+    }
 }

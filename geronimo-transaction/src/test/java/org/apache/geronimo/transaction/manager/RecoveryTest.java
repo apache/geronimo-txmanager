@@ -36,14 +36,19 @@ import junit.framework.TestCase;
 public class RecoveryTest extends TestCase {
 
     XidFactory xidFactory = new XidFactoryImpl();
-    protected final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
+    MockLog mockLog = new MockLog();
+    protected TransactionManagerImpl txManager;
     private final String RM1 = "rm1";
     private final String RM2 = "rm2";
     private final String RM3 = "rm3";
     private int count = 0;
 
+    @Override
+    protected void setUp() throws Exception {
+        txManager = new TransactionManagerImpl(1, xidFactory, mockLog);
+    }
+
     public void testCommittedRMToBeRecovered() throws Exception {
-        MockLog mockLog = new MockLog();
         Xid[] xids = getXidArray(1);
         // specifies an empty Xid array such that this XAResource has nothing
         // to recover. This means that the presumed abort protocol has failed
@@ -53,7 +58,7 @@ public class RecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
+        Recovery recovery = new RecoveryImpl(txManager);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
@@ -65,7 +70,6 @@ public class RecoveryTest extends TestCase {
     }
     
     public void test2ResOnlineAfterRecoveryStart() throws Exception {
-        MockLog mockLog = new MockLog();
         Xid[] xids = getXidArray(3);
         MockXAResource xares1 = new MockXAResource(RM1);
         MockXAResource xares2 = new MockXAResource(RM2);
@@ -73,7 +77,7 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
+        Recovery recovery = new RecoveryImpl(txManager);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
@@ -106,7 +110,6 @@ public class RecoveryTest extends TestCase {
     }
 
     public void test3ResOnlineAfterRecoveryStart() throws Exception {
-        MockLog mockLog = new MockLog();
         Xid[] xids12 = getXidArray(3);
         List xids12List = Arrays.asList(xids12);
         Xid[] xids13 = getXidArray(3);
@@ -141,7 +144,7 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos23, xares2);
         addBranch(txInfos23, xares3);
         prepareLog(mockLog, txInfos23);
-        Recovery recovery = new RecoveryImpl(mockLog, xidFactory, retryScheduler);
+        Recovery recovery = new RecoveryImpl(txManager);
         recovery.recoverLog();
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());

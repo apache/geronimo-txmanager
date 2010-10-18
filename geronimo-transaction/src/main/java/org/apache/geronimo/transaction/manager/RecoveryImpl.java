@@ -48,9 +48,8 @@ import org.slf4j.LoggerFactory;
 public class RecoveryImpl implements Recovery {
     private static final Logger log = LoggerFactory.getLogger("Recovery");
 
-    private final TransactionLog txLog;
-    private final XidFactory xidFactory;
-    private final RetryScheduler retryScheduler;
+
+    private final TransactionManagerImpl txManager;
 
     private final Map<Xid, TransactionImpl> externalXids = new HashMap<Xid, TransactionImpl>();
     private final Map<ByteArrayWrapper, XidBranchesPair> ourXids = new HashMap<ByteArrayWrapper, XidBranchesPair>();
@@ -59,23 +58,21 @@ public class RecoveryImpl implements Recovery {
 
     private final List<Exception> recoveryErrors = new ArrayList<Exception>();
 
-    public RecoveryImpl(final TransactionLog txLog, final XidFactory xidFactory, RetryScheduler retryScheduler) {
-        this.txLog = txLog;
-        this.xidFactory = xidFactory;
-        this.retryScheduler = retryScheduler;
+    public RecoveryImpl(TransactionManagerImpl txManager) {
+        this.txManager = txManager;
     }
 
     public synchronized void recoverLog() throws XAException {
         Collection<XidBranchesPair> preparedXids;
         try {
-            preparedXids = txLog.recover(xidFactory);
+            preparedXids = txManager.getTransactionLog().recover(txManager.getXidFactory());
         } catch (LogException e) {
             throw (XAException) new XAException(XAException.XAER_RMERR).initCause(e);
         }
         for (XidBranchesPair xidBranchesPair : preparedXids) {
             Xid xid = xidBranchesPair.getXid();
             log.trace("read prepared global xid from log: " + toString(xid));
-            if (xidFactory.matchesGlobalId(xid.getGlobalTransactionId())) {
+            if (txManager.getXidFactory().matchesGlobalId(xid.getGlobalTransactionId())) {
                 ourXids.put(new ByteArrayWrapper(xid.getGlobalTransactionId()), xidBranchesPair);
                 for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
                     log.trace("read branch from log: " + transactionBranchInfo.toString());
@@ -89,7 +86,7 @@ public class RecoveryImpl implements Recovery {
                 }
             } else {
                 log.trace("read external prepared xid from log: " + toString(xid));
-                TransactionImpl externalTx = new ExternalTransaction(xid, txLog, retryScheduler, xidBranchesPair.getBranches());
+                TransactionImpl externalTx = new ExternalTransaction(xid, txManager, xidBranchesPair.getBranches());
                 externalXids.put(xid, externalTx);
                 externalGlobalIdMap.put(xid.getGlobalTransactionId(), externalTx);
             }
@@ -123,7 +120,7 @@ public class RecoveryImpl implements Recovery {
                 } else {
                     log.trace("This xid was prepared from another XAResource, ignoring");
                 }
-            } else if (xidFactory.matchesGlobalId(xid.getGlobalTransactionId())) {
+            } else if (txManager.getXidFactory().matchesGlobalId(xid.getGlobalTransactionId())) {
                 //ours, but prepare not logged
                 log.trace("this xid was initiated from this tm but not prepared: rolling back");
                 try {
@@ -132,7 +129,7 @@ public class RecoveryImpl implements Recovery {
                     recoveryErrors.add(e);
                     log.error("Could not roll back", e);
                 }
-            } else if (xidFactory.matchesBranchId(xid.getBranchQualifier())) {
+            } else if (txManager.getXidFactory().matchesBranchId(xid.getBranchQualifier())) {
                 //our branch, but we did not start this tx.
                 TransactionImpl externalTx = externalGlobalIdMap.get(xid.getGlobalTransactionId());
                 if (externalTx == null) {
@@ -190,7 +187,7 @@ public class RecoveryImpl implements Recovery {
         if (xidBranchesPair.getBranches().isEmpty() && 0 != removed ) {
             try {
                 ourXids.remove(new ByteArrayWrapper(xidBranchesPair.getXid().getGlobalTransactionId()));
-                txLog.commit(xidBranchesPair.getXid(), xidBranchesPair.getMark());
+                txManager.getTransactionLog().commit(xidBranchesPair.getXid(), xidBranchesPair.getMark());
             } catch (LogException e) {
                 recoveryErrors.add(e);
                 log.error("Could not commit", e);
@@ -273,8 +270,8 @@ public class RecoveryImpl implements Recovery {
     private static class ExternalTransaction extends TransactionImpl {
         private final Set<String> resourceNames = new HashSet<String>();
 
-        public ExternalTransaction(Xid xid, TransactionLog txLog, RetryScheduler retryScheduler, Set<TransactionBranchInfo> resourceNames) {
-            super(xid, txLog, retryScheduler);
+        public ExternalTransaction(Xid xid, TransactionManagerImpl txManager, Set<TransactionBranchInfo> resourceNames) {
+            super(xid, txManager);
             for (TransactionBranchInfo info: resourceNames) {
                 this.resourceNames.add(info.getResourceName());
             }

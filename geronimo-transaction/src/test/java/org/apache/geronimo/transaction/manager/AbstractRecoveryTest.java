@@ -38,14 +38,17 @@ public abstract class AbstractRecoveryTest extends TestCase {
     protected TransactionLog txLog;
 
     protected final XidFactory xidFactory = new XidFactoryImpl();
-    protected final RetryScheduler retryScheduler = new ExponentialtIntervalRetryScheduler();
+    protected TransactionManagerImpl txManager;
     private static final String RM1 = "rm1";
     private static final String RM2 = "rm2";
     private static final String RM3 = "rm3";
     private static final int XID_COUNT = 3;
     private int branchCounter;
 
-    public void testDummy() throws Exception {}
+    @Override
+    protected void setUp() throws Exception {
+        txManager = new TransactionManagerImpl(1, xidFactory, txLog);
+    }
 
     public void test2ResOnlineAfterRecoveryStart() throws Exception {
         Xid[] xids = getXidArray(XID_COUNT);
@@ -56,8 +59,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         addBranch(txInfos, xares2);
         prepareLog(txLog, txInfos);
         prepareForReplay();
-        Recovery recovery = new RecoveryImpl(txLog, xidFactory, retryScheduler);
-        recovery.recoverLog();
+        Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
         assertTrue(!recovery.localRecoveryComplete());
@@ -105,8 +107,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         addBranch(txInfos23, xares3);
         prepareLog(txLog, txInfos23);
         prepareForReplay();
-        Recovery recovery = new RecoveryImpl(txLog, xidFactory, retryScheduler);
-        recovery.recoverLog();
+        Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
         assertEquals(XID_COUNT * 3, recovery.localUnrecoveredCount());
