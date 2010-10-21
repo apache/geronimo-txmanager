@@ -27,6 +27,7 @@ public class MockLogRecoveryTest extends AbstractRecoveryTest {
 
     protected void setUp() throws Exception {
         txLog = new MockLog();
+        super.setUp();
     }
 
     protected void tearDown() throws Exception {
@@ -34,5 +35,6 @@ public class MockLogRecoveryTest extends AbstractRecoveryTest {
     }
 
     protected void prepareForReplay() throws Exception {
+        txManager.recovery.recoverLog();
     }
 }

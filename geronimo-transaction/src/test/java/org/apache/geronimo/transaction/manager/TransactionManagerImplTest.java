@@ -244,7 +244,7 @@ public class TransactionManagerImplTest extends TestCase {
     //This test depends on using the resource that will be recovered by the resource manager.
     public void testSimpleRecovery() throws Exception {
         //create a transaction in our own transaction manager
-        Xid xid = tm.xidFactory.createXid();
+        Xid xid = tm.getXidFactory().createXid();
         Transaction tx = tm.importXid(xid, 0);
         tm.resume(tx);
         assertSame(tx, tm.getTransaction());

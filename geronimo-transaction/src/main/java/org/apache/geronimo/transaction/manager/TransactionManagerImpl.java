@@ -45,8 +45,8 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     protected static final int DEFAULT_TIMEOUT = 600;
     protected static final byte[] DEFAULT_TM_ID = new byte[] {71,84,77,73,68};
 
-    final TransactionLog transactionLog;
-    final XidFactory xidFactory;
+    private final TransactionLog transactionLog;
+    private final XidFactory xidFactory;
     private final int defaultTransactionTimeoutMilliseconds;
     private final ThreadLocal<Long> transactionTimeoutMilliseconds = new ThreadLocal<Long>();
     private final ThreadLocal<Transaction> threadTx = new ThreadLocal<Transaction>();
@@ -100,7 +100,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             this.xidFactory = new XidFactoryImpl(DEFAULT_TM_ID);
         }
 
-        recovery = new RecoveryImpl(this.transactionLog, this.xidFactory, retryScheduler);
+        recovery = new RecoveryImpl(this);
         recovery.recoverLog();
     }
 
@@ -156,7 +156,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getStatus() != Status.STATUS_NO_TRANSACTION) {
             throw new NotSupportedException("Nested Transactions are not supported");
         }
-        TransactionImpl tx = new TransactionImpl(xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        TransactionImpl tx = new TransactionImpl(this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
 //        timeoutTimer.schedule(tx, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
         try {
             associate(tx);
@@ -274,7 +274,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds < 0) {
             throw new SystemException("transaction timeout must be positive or 0 to reset to default");
         }
-        return new TransactionImpl(xid, xidFactory, transactionLog, retryScheduler, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        return new TransactionImpl(xid, this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
     }
 
     public void commit(Transaction tx, boolean onePhase) throws XAException {
@@ -355,6 +355,22 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     public void unregisterNamedXAResourceFactory(String namedXAResourceFactoryName) {
         namedXAResourceFactories.remove(namedXAResourceFactoryName);
+    }
+
+    NamedXAResourceFactory getNamedXAResourceFactory(String xaResourceName) {
+        return namedXAResourceFactories.get(xaResourceName);
+    }
+
+    XidFactory getXidFactory() {
+        return xidFactory;
+    }
+
+    TransactionLog getTransactionLog() {
+        return transactionLog;
+    }
+
+    RetryScheduler getRetryScheduler() {
+        return retryScheduler;
     }
 
     public Map<Xid, TransactionImpl> getExternalXids() {

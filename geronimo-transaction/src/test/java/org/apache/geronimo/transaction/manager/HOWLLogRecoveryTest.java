@@ -54,6 +54,7 @@ public class HOWLLogRecoveryTest extends AbstractRecoveryTest {
             }
         }
         setUpHowlLog();
+        super.setUp();
     }
 
     private void setUpHowlLog() throws Exception {
@@ -86,6 +87,7 @@ public class HOWLLogRecoveryTest extends AbstractRecoveryTest {
     protected void prepareForReplay() throws Exception {
         tearDown();
         setUpHowlLog();
+        super.setUp();
     }
 
     public static Test suite() {

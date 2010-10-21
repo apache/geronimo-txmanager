@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 /**
  * @version $Rev$ $Date$
  */
-public class CommitTask implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(CommitTask.class);
+public class RollbackTask implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(RollbackTask.class);
     private final Xid xid;
     private final List<TransactionBranch> rms;
     private final Object logMark;
@@ -43,46 +43,45 @@ public class CommitTask implements Runnable {
     private int count = 0;
     private int status;
     private XAException cause;
-    private boolean evercommit;
+    private boolean everRolledBack;
 
-    public CommitTask(Xid xid, List<TransactionBranch> rms, Object logMark, TransactionManagerImpl txManager) {
+    public RollbackTask(Xid xid, List<TransactionBranch> rms, Object logMark, TransactionManagerImpl txManager) {
         this.xid = xid;
         this.rms = rms;
         this.logMark = logMark;
         this.txManager = txManager;
     }
 
-    @Override
     public void run() {
         synchronized (this) {
-            status = Status.STATUS_COMMITTING;
+            status = Status.STATUS_ROLLING_BACK;
         }
         for (int index = 0; index < rms.size(); ) {
             TransactionBranch manager = rms.get(index);
             try {
                 try {
-                    manager.getCommitter().commit(manager.getBranchId(), false);
+                    manager.getCommitter().rollback(manager.getBranchId());
                     remove(index);
-                    evercommit = true;
+                    everRolledBack = true;
                 } catch (XAException e) {
                     log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
 
                     if (e.errorCode == XAException.XA_HEURRB) {
                         remove(index);
+                        // let's not throw an exception as the transaction has been rolled back
                         log.info("Transaction has been heuristically rolled back");
-                        cause = e;
+                        everRolledBack = true;
                         manager.getCommitter().forget(manager.getBranchId());
                     } else if (e.errorCode == XAException.XA_HEURMIX) {
                         remove(index);
                         log.info("Transaction has been heuristically committed and rolled back");
+                        everRolledBack = true;
                         cause = e;
-                        evercommit = true;
                         manager.getCommitter().forget(manager.getBranchId());
                     } else if (e.errorCode == XAException.XA_HEURCOM) {
                         remove(index);
-                        // let's not throw an exception as the transaction has been committed
                         log.info("Transaction has been heuristically committed");
-                        evercommit = true;
+                        cause = e;
                         manager.getCommitter().forget(manager.getBranchId());
                     } else if (e.errorCode == XAException.XA_RETRY) {
                         // do nothing, retry later
@@ -112,8 +111,11 @@ public class CommitTask implements Runnable {
                             cause = e;
                         }
                     } else {
-                        //at least RMERR, which we can do nothing about
-                        //nothing we can do about it.... keep trying
+                        //at least these error codes:
+                        // XAException.XA_RMERR
+                        // XAException.XA_RBROLLBACK
+                        // XAException.XAER_NOTA
+                        //nothing we can do about it
                         remove(index);
                         cause = e;
                     }
@@ -127,12 +129,14 @@ public class CommitTask implements Runnable {
                 }
             }
         }
-        //if all resources were read only, we didn't write a prepare record.
+
         if (rms.isEmpty()) {
             try {
-                txManager.getTransactionLog().commit(xid, logMark);
+                if (logMark != null) {
+                    txManager.getTransactionLog().rollback(xid, logMark);
+                }
                 synchronized (this) {
-                    status = Status.STATUS_COMMITTED;
+                    status = Status.STATUS_ROLLEDBACK;
                 }
             } catch (LogException e) {
                 log.error("Unexpected exception logging commit completion for xid " + xid, e);
@@ -157,12 +161,11 @@ public class CommitTask implements Runnable {
         return cause;
     }
 
-    public boolean isEvercommit() {
-        return evercommit;
+    public boolean isEverRolledBack() {
+        return everRolledBack;
     }
 
     public int getStatus() {
         return status;
     }
-
 }
