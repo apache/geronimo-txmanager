@@ -52,6 +52,7 @@ public class RollbackTask implements Runnable {
         this.txManager = txManager;
     }
 
+    @Override
     public void run() {
         synchronized (this) {
             status = Status.STATUS_ROLLING_BACK;
@@ -66,7 +67,10 @@ public class RollbackTask implements Runnable {
                 } catch (XAException e) {
                     log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
 
-                    if (e.errorCode == XAException.XA_HEURRB) {
+                    if (e.errorCode >= XAException.XA_RBBASE && e.errorCode <= XAException.XA_RBEND || e.errorCode == XAException.XAER_NOTA) {
+                        remove(index);
+                        everRolledBack = true;
+                    } else if (e.errorCode == XAException.XA_HEURRB) {
                         remove(index);
                         // let's not throw an exception as the transaction has been rolled back
                         log.info("Transaction has been heuristically rolled back");
@@ -86,10 +90,10 @@ public class RollbackTask implements Runnable {
                     } else if (e.errorCode == XAException.XA_RETRY) {
                         // do nothing, retry later
                         index++;
-                    } else if (e.errorCode == XAException.XAER_RMFAIL) {
+                    } else if (e.errorCode == XAException.XAER_RMFAIL || e.errorCode == XAException.XAER_RMERR) {
                         //refresh the xa resource from the NamedXAResourceFactory
                         if (manager.getCommitter() instanceof NamedXAResource) {
-                            String xaResourceName = ((NamedXAResource)manager.getCommitter()).getName();
+                            String xaResourceName = manager.getResourceName();
                             NamedXAResourceFactory namedXAResourceFactory = txManager.getNamedXAResourceFactory(xaResourceName);
                             if (namedXAResourceFactory != null) {
                                 try {
@@ -106,15 +110,10 @@ public class RollbackTask implements Runnable {
                                 index++;
                             }
                         } else {
-                            //no hope
+                            //no hope.  Since we don't record the exception if we do manage to retry stuff later, presumably we shouldn't now, either.
                             remove(index);
-                            cause = e;
                         }
                     } else {
-                        //at least these error codes:
-                        // XAException.XA_RMERR
-                        // XAException.XA_RBROLLBACK
-                        // XAException.XAER_NOTA
                         //nothing we can do about it
                         remove(index);
                         cause = e;
