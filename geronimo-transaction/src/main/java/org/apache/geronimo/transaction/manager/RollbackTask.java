@@ -52,7 +52,6 @@ public class RollbackTask implements Runnable {
         this.txManager = txManager;
     }
 
-    @Override
     public void run() {
         synchronized (this) {
             status = Status.STATUS_ROLLING_BACK;
