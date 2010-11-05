@@ -89,7 +89,7 @@ public class CommitTask implements Runnable {
                     } else if (e.errorCode == XAException.XAER_RMFAIL) {
                         //refresh the xa resource from the NamedXAResourceFactory
                         if (manager.getCommitter() instanceof NamedXAResource) {
-                            String xaResourceName = ((NamedXAResource)manager.getCommitter()).getName();
+                            String xaResourceName = manager.getResourceName();
                             NamedXAResourceFactory namedXAResourceFactory = txManager.getNamedXAResourceFactory(xaResourceName);
                             if (namedXAResourceFactory != null) {
                                 try {
