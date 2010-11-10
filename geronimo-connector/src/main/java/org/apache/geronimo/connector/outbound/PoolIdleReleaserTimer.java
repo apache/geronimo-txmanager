@@ -23,7 +23,7 @@ import java.util.Timer;
  */
 public class PoolIdleReleaserTimer {
 
-    private static final Timer timer = new Timer(true);
+    private static final Timer timer = new Timer("PoolIdleReleaseTimer", true);
 
     public static Timer getTimer() {
         return timer;

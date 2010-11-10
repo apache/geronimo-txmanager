@@ -69,7 +69,7 @@ public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapCon
      * @see javax.resource.spi.BootstrapContext#createTimer()
      */
     public Timer createTimer() throws UnavailableException {
-        return new Timer();
+        return new Timer("BootStrapTimer", true);
     }
 
 }
