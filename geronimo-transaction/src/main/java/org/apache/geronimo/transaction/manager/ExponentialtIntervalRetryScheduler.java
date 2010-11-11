@@ -28,7 +28,7 @@ import java.util.TimerTask;
  */
 public class ExponentialtIntervalRetryScheduler implements RetryScheduler{
 
-    private final Timer timer = new Timer();
+    private final Timer timer = new Timer("RetryTimer", true);
 
     private final int base = 2;
 
