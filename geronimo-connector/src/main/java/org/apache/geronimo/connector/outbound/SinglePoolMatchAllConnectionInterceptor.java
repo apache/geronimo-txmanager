@@ -140,9 +140,12 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
 
     protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
-            for (ManagedConnectionInfo mci : pool.values()) {
+            for (Iterator<Map.Entry<ManagedConnection, ManagedConnectionInfo>> mcis = pool.entrySet().iterator(); mcis.hasNext(); ) {
+                ManagedConnectionInfo mci = mcis.next().getValue();
                 if (mci.getLastUsed() < threshold) {
+                    mcis.remove();
                     killList.add(mci);
+                    connectionCount--;
                 }
             }
         }
