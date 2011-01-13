@@ -77,8 +77,8 @@ public class MultiPoolConnectionInterceptor implements ConnectionInterceptor, Po
                 pools.put(key, (PoolingAttributes) poolInterceptor);
             }
         }
-        mci.setPoolInterceptor(poolInterceptor);
         poolInterceptor.getConnection(connectionInfo);
+        connectionInfo.getManagedConnectionInfo().setPoolInterceptor(poolInterceptor);
     }
 
     // let underlying pools handle destroyed processing...
