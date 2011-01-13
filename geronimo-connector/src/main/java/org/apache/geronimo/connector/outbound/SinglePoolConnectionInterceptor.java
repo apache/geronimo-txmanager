@@ -19,6 +19,7 @@ package org.apache.geronimo.connector.outbound;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.resource.ResourceException;
@@ -160,9 +161,12 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
 
     protected void getExpiredManagedConnectionInfos(long threshold, List<ManagedConnectionInfo> killList) {
         synchronized (pool) {
-            for (ManagedConnectionInfo mci : pool) {
+            for (Iterator<ManagedConnectionInfo> mcis = pool.iterator(); mcis.hasNext(); ) {
+                ManagedConnectionInfo mci = mcis.next();
                 if (mci.getLastUsed() < threshold) {
+                    mcis.remove();
                     killList.add(mci);
+                    connectionCount--;
                 }
             }
         }
