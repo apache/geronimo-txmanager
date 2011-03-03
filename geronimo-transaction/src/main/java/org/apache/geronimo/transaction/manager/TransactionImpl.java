@@ -61,6 +61,7 @@ public class TransactionImpl implements Transaction {
     private final IdentityHashMap activeXaResources = new IdentityHashMap(3);
     private final IdentityHashMap suspendedXaResources = new IdentityHashMap(3);
     private int status = Status.STATUS_NO_TRANSACTION;
+    private Exception markRollbackCause;
     private Object logMark;
 
     private final Map resources = new HashMap();
@@ -77,6 +78,7 @@ public class TransactionImpl implements Transaction {
         try {
             txnLog.begin(xid);
         } catch (LogException e) {
+            markRollbackCause(e);
             status = Status.STATUS_MARKED_ROLLBACK;
             SystemException ex = new SystemException("Error logging begin; transaction marked for roll back)");
             ex.initCause(e);
@@ -257,19 +259,18 @@ public class TransactionImpl implements Transaction {
         beforePrepare();
 
         try {
-            boolean timedout = false;
             if (TransactionTimer.getCurrentTime() > timeout) {
+                markRollbackCause(new Exception("Transaction has timed out"));
                 status = Status.STATUS_MARKED_ROLLBACK;
-                timedout = true;
             }
 
             if (status == Status.STATUS_MARKED_ROLLBACK) {
                 rollbackResources(resourceManagers);
-                if (timedout) {
-                    throw new RollbackException("Transaction timeout");
-                } else {
-                    throw new RollbackException("Unable to commit: transaction marked for rollback");
+                RollbackException rollbackException = new RollbackException("Unable to commit: transaction marked for rollback");
+                if (markRollbackCause != null) {
+                    rollbackException.initCause(markRollbackCause);
                 }
+                throw rollbackException;
             }
             synchronized (this) {
                 if (status == Status.STATUS_ACTIVE) {
@@ -421,6 +422,7 @@ public class TransactionImpl implements Transaction {
                 }
             } catch (XAException e) {
                 synchronized (this) {
+                    markRollbackCause(e);
                     status = Status.STATUS_MARKED_ROLLBACK;
                     //TODO document why this is true from the spec.
                     //XAException during prepare means we can assume resource is rolled back.
@@ -515,9 +517,16 @@ public class TransactionImpl implements Transaction {
             } catch (Exception e) {
                 log.warn("Unexpected exception from beforeCompletion; transaction will roll back", e);
                 synchronized (this) {
+                    markRollbackCause(e);
                     status = Status.STATUS_MARKED_ROLLBACK;
                 }
             }
+        }
+    }
+
+    private void markRollbackCause(Exception e) {
+        if (markRollbackCause == null) {
+            markRollbackCause = e;
         }
     }
 
@@ -564,6 +573,7 @@ public class TransactionImpl implements Transaction {
             } catch (XAException e) {
                 log.warn("Error ending association for XAResource " + xaRes + "; transaction will roll back. XA error code: " + e.errorCode, e);
                 synchronized (this) {
+                    markRollbackCause(e);
                     status = Status.STATUS_MARKED_ROLLBACK;
                 }
             }
