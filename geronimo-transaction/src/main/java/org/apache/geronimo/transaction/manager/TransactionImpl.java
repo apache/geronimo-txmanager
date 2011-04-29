@@ -57,7 +57,7 @@ public class TransactionImpl implements Transaction {
     private final IdentityHashMap<XAResource, TransactionBranch> activeXaResources = new IdentityHashMap<XAResource, TransactionBranch>(3);
     private final IdentityHashMap<XAResource, TransactionBranch> suspendedXaResources = new IdentityHashMap<XAResource, TransactionBranch>(3);
     private int status = Status.STATUS_NO_TRANSACTION;
-    private Exception markRollbackCause;
+    private Throwable markRollbackCause;
     private Object logMark;
 
     private final Map<Object, Object> resources = new HashMap<Object, Object>();
@@ -126,7 +126,7 @@ public class TransactionImpl implements Transaction {
         setRollbackOnly(new SetRollbackOnlyException());
     }
 
-    public synchronized void setRollbackOnly(Exception reason) {
+    public synchronized void setRollbackOnly(Throwable reason) {
         switch (status) {
             case Status.STATUS_ACTIVE:
             case Status.STATUS_PREPARING:
@@ -535,7 +535,7 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private void markRollbackCause(Exception e) {
+    private void markRollbackCause(Throwable e) {
         if (markRollbackCause == null) {
             markRollbackCause = e;
         }
