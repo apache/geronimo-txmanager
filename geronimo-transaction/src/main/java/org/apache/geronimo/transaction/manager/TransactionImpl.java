@@ -123,10 +123,15 @@ public class TransactionImpl implements Transaction {
     }
 
     public synchronized void setRollbackOnly() throws IllegalStateException {
+        setRollbackOnly(new SetRollbackOnlyException());
+    }
+
+    public synchronized void setRollbackOnly(Exception reason) {
         switch (status) {
             case Status.STATUS_ACTIVE:
             case Status.STATUS_PREPARING:
                 status = Status.STATUS_MARKED_ROLLBACK;
+                markRollbackCause(reason);
                 break;
             case Status.STATUS_MARKED_ROLLBACK:
             case Status.STATUS_ROLLING_BACK:
@@ -209,7 +214,7 @@ public class TransactionImpl implements Transaction {
         } catch (XAException e) {
             log.warn("Unable to enlist XAResource " + xaRes + ", errorCode: " + e.errorCode, e);
             // mark status as rollback only because enlist resource failed
-            setRollbackOnly();
+            setRollbackOnly(e);
             return false;
         }
     }
