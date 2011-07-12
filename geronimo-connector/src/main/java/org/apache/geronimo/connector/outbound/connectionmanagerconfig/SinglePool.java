@@ -26,6 +26,7 @@ import org.apache.geronimo.connector.outbound.SinglePoolMatchAllConnectionInterc
  * @version $Rev$ $Date$
  */
 public class SinglePool implements PoolingSupport {
+    private static final long serialVersionUID = -1190636112655036636L;
     private int maxSize;
     private int minSize;
     private int blockingTimeoutMilliseconds;

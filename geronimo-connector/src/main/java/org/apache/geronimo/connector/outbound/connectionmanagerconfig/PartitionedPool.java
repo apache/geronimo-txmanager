@@ -26,6 +26,7 @@ import org.apache.geronimo.connector.outbound.PoolingAttributes;
  */
 public class PartitionedPool implements PoolingSupport {
 
+    private static final long serialVersionUID = -4843669262711657990L;
     private boolean partitionByConnectionRequestInfo;
     private boolean partitionBySubject;
 

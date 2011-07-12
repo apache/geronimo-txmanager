@@ -26,6 +26,8 @@ import org.apache.geronimo.connector.outbound.ConnectionInterceptor;
  *
  * */
 public class NoPool implements PoolingSupport {
+    private static final long serialVersionUID = -7871656583080873750L;
+
     public ConnectionInterceptor addPoolingInterceptors(ConnectionInterceptor tail) {
         return tail;
     }
