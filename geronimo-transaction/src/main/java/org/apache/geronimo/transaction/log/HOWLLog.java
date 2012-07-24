@@ -17,11 +17,10 @@
 
 package org.apache.geronimo.transaction.log;
 
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.transaction.xa.Xid;
@@ -84,6 +83,32 @@ public class HOWLLog implements TransactionLog {
                    int threadsWaitingForceThreshold,
                    XidFactory xidFactory,
                    File serverBaseDir) throws IOException, LogConfigurationException {
+        this(bufferClassName, bufferSize,
+             checksumEnabled, adler32Checksum,
+             flushSleepTimeMilliseconds, logFileDir,
+             logFileExt, logFileName,
+             maxBlocksPerFile, maxBuffers,
+             maxLogFiles, minBuffers,
+             threadsWaitingForceThreshold, true,
+             xidFactory, serverBaseDir);
+    }
+
+    public HOWLLog(String bufferClassName,
+                   int bufferSize,
+                   boolean checksumEnabled,
+                   boolean adler32Checksum,
+                   int flushSleepTimeMilliseconds,
+                   String logFileDir,
+                   String logFileExt,
+                   String logFileName,
+                   int maxBlocksPerFile,
+                   int maxBuffers,
+                   int maxLogFiles,
+                   int minBuffers,
+                   int threadsWaitingForceThreshold,
+                   boolean flushPartialBuffers,
+                   XidFactory xidFactory,
+                   File serverBaseDir) throws IOException, LogConfigurationException {
         this.serverBaseDir = serverBaseDir;
         setBufferClassName(bufferClassName);
         setBufferSizeKBytes(bufferSize);
@@ -99,6 +124,7 @@ public class HOWLLog implements TransactionLog {
         setMaxLogFiles(maxLogFiles);
         setMinBuffers(minBuffers);
         setThreadsWaitingForceThreshold(threadsWaitingForceThreshold);
+        setFlushPartialBuffers(flushPartialBuffers);
         this.xidFactory = xidFactory;
         this.logger = new XALogger(configuration);
     }
@@ -213,6 +239,14 @@ public class HOWLLog implements TransactionLog {
 
     public void setMaxLogFiles(int maxLogFiles) {
         configuration.setMaxLogFiles(maxLogFiles);
+    }
+
+    public boolean isFlushPartialBuffers() {
+        return configuration.isFlushPartialBuffers();
+    }
+
+    public void setFlushPartialBuffers(boolean flushPartialBuffers) {
+        configuration.setFlushPartialBuffers(flushPartialBuffers);
     }
 
     public void doStart() throws Exception {
