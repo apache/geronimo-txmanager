@@ -17,10 +17,10 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import java.util.Random;
-import javax.transaction.xa.Xid;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Random;
+import javax.transaction.xa.Xid;
 
 /**
  * Factory for transaction ids.
@@ -35,10 +35,11 @@ import java.net.UnknownHostException;
  */
 public class XidFactoryImpl implements XidFactory {
     private final byte[] baseId = new byte[Xid.MAXGTRIDSIZE];
-    private long count = 1;
+    private final long start = System.currentTimeMillis();
+    private long count = start;
 
     public XidFactoryImpl(byte[] tmId) {
-       System.arraycopy(tmId, 0, baseId, 8, tmId.length);
+        System.arraycopy(tmId, 0, baseId, 8, tmId.length);
     }
 
     public XidFactoryImpl() {
@@ -68,14 +69,7 @@ public class XidFactoryImpl implements XidFactory {
         synchronized (this) {
             id = count++;
         }
-        globalId[0] = (byte) id;
-        globalId[1] = (byte) (id >>> 8);
-        globalId[2] = (byte) (id >>> 16);
-        globalId[3] = (byte) (id >>> 24);
-        globalId[4] = (byte) (id >>> 32);
-        globalId[5] = (byte) (id >>> 40);
-        globalId[6] = (byte) (id >>> 48);
-        globalId[7] = (byte) (id >>> 56);
+        insertLong(id, globalId, 0);
         return new XidImpl(globalId);
     }
 
@@ -85,6 +79,7 @@ public class XidFactoryImpl implements XidFactory {
         branchId[1] = (byte) (branch >>> 8);
         branchId[2] = (byte) (branch >>> 16);
         branchId[3] = (byte) (branch >>> 24);
+        insertLong(start, branchId, 4);
         return new XidImpl(globalId, branchId);
     }
 
@@ -97,14 +92,22 @@ public class XidFactoryImpl implements XidFactory {
                 return false;
             }
         }
-        return true;
+        // for recovery, only match old transactions
+        long id = extractLong(globalTransactionId, 0);
+        return (id < start);
     }
 
     public boolean matchesBranchId(byte[] branchQualifier) {
         if (branchQualifier.length != Xid.MAXBQUALSIZE) {
             return false;
         }
-        for (int i = 8; i < branchQualifier.length; i++) {
+        long id = extractLong(branchQualifier, 4);
+        if (id >= start) {
+            // newly created branch, not recoverable
+            return false;
+        }
+
+        for (int i = 12; i < branchQualifier.length; i++) {
             if (branchQualifier[i] != baseId[i]) {
                 return false;
             }
@@ -114,6 +117,28 @@ public class XidFactoryImpl implements XidFactory {
 
     public Xid recover(int formatId, byte[] globalTransactionid, byte[] branchQualifier) {
         return new XidImpl(formatId, globalTransactionid, branchQualifier);
+    }
+
+    static void insertLong(long value, byte[] bytes, int offset) {
+        bytes[offset + 0] = (byte) value;
+        bytes[offset + 1] = (byte) (value >>> 8);
+        bytes[offset + 2] = (byte) (value >>> 16);
+        bytes[offset + 3] = (byte) (value >>> 24);
+        bytes[offset + 4] = (byte) (value >>> 32);
+        bytes[offset + 5] = (byte) (value >>> 40);
+        bytes[offset + 6] = (byte) (value >>> 48);
+        bytes[offset + 7] = (byte) (value >>> 56);
+    }
+
+    static long extractLong(byte[] bytes, int offset) {
+        return (bytes[offset + 0] & 0xff)
+                + (((bytes[offset + 1] & 0xff)) << 8)
+                + (((bytes[offset + 2] & 0xff)) << 16)
+                + (((bytes[offset + 3] & 0xffL)) << 24)
+                + (((bytes[offset + 4] & 0xffL)) << 32)
+                + (((bytes[offset + 5] & 0xffL)) << 40)
+                + (((bytes[offset + 6] & 0xffL)) << 48)
+                + (((long) bytes[offset + 7]) << 56);
     }
 
 }
