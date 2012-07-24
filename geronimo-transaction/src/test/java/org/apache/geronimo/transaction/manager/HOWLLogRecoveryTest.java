@@ -19,10 +19,10 @@ package org.apache.geronimo.transaction.manager;
 
 import java.io.File;
 
-import org.apache.geronimo.transaction.log.HOWLLog;
+import junit.extensions.TestSetup;
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import junit.extensions.TestSetup;
+import org.apache.geronimo.transaction.log.HOWLLog;
 
 /**
  *
@@ -37,6 +37,18 @@ public class HOWLLogRecoveryTest extends AbstractRecoveryTest {
     private static final String targetDir = new File(basedir, "target").getAbsolutePath();
     private static final File txlogDir = new File(basedir, "target/" + logFileDir);
 
+    @Override
+    public void setUp() throws Exception {
+        // Deletes the previous transaction log files.
+        File[] files = txlogDir.listFiles();
+        if ( null != files ) {
+            for (int i = 0; i < files.length; i++) {
+                files[i].delete();
+            }
+        }
+        super.setUp();
+    }
+
     public void test2Again() throws Exception {
         test2ResOnlineAfterRecoveryStart();
     }
@@ -45,19 +57,9 @@ public class HOWLLogRecoveryTest extends AbstractRecoveryTest {
         test3ResOnlineAfterRecoveryStart();
     }
 
-    protected void setUp() throws Exception {
-        // Deletes the previous transaction log files.
-        File[] files = txlogDir.listFiles();
-        if ( null != files ) {
-            for (int i = 0; i < files.length; i++) {
-                files[i].delete();
-            }
-        }
-        setUpHowlLog();
-        super.setUp();
-    }
-
-    private void setUpHowlLog() throws Exception {
+    @Override
+    protected TransactionManagerImpl createTransactionManager() throws Exception {
+        XidFactory xidFactory = new XidFactoryImpl("hi".getBytes());
         HOWLLog howlLog = new HOWLLog(
                 "org.objectweb.howl.log.BlockLogBuffer", //                "bufferClassName",
                 4, //                "bufferSizeKBytes",
@@ -76,18 +78,17 @@ public class HOWLLogRecoveryTest extends AbstractRecoveryTest {
                 new File(targetDir)
         );
         howlLog.doStart();
-        txLog = howlLog;
+        return new TransactionManagerImpl(1, xidFactory, howlLog);
     }
 
     protected void tearDown() throws Exception {
-        ((HOWLLog)txLog).doStop();
-        txLog = null;
+        ((HOWLLog) txManager.getTransactionLog()).doStop();
     }
 
     protected void prepareForReplay() throws Exception {
+        Thread.sleep(100);
         tearDown();
-        setUpHowlLog();
-        super.setUp();
+        txManager = createTransactionManager();
     }
 
     public static Test suite() {

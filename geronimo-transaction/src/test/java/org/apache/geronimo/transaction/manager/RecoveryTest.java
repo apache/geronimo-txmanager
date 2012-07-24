@@ -35,7 +35,6 @@ import junit.framework.TestCase;
  * */
 public class RecoveryTest extends TestCase {
 
-    XidFactory xidFactory = new XidFactoryImpl();
     MockLog mockLog = new MockLog();
     protected TransactionManagerImpl txManager;
     private final String RM1 = "rm1";
@@ -45,7 +44,16 @@ public class RecoveryTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        txManager = new TransactionManagerImpl(1, xidFactory, mockLog);
+        txManager = createTransactionManager();
+    }
+
+    protected TransactionManagerImpl createTransactionManager() throws XAException, InterruptedException {
+        return new TransactionManagerImpl(1, new XidFactoryImpl("hi".getBytes()), mockLog);
+    }
+
+    protected void prepareForReplay() throws Exception {
+        Thread.sleep(100);
+        txManager = createTransactionManager();
     }
 
     public void testCommittedRMToBeRecovered() throws Exception {
@@ -58,8 +66,8 @@ public class RecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(txManager);
-        recovery.recoverLog();
+        prepareForReplay();
+        Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
         assertTrue(!recovery.localRecoveryComplete());
@@ -77,8 +85,8 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
         prepareLog(mockLog, txInfos);
-        Recovery recovery = new RecoveryImpl(txManager);
-        recovery.recoverLog();
+        prepareForReplay();
+        Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
         assertTrue(!recovery.localRecoveryComplete());
@@ -87,14 +95,14 @@ public class RecoveryTest extends TestCase {
         assertEquals(3, xares1.committed.size());
         recovery.recoverResourceManager(xares2);
         assertEquals(3, xares2.committed.size());
-        assertTrue(recovery.localRecoveryComplete());
+        assertTrue(txManager.recovery.localRecoveryComplete());
 
     }
 
     private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) throws XAException {
         for (int i = 0; i < txInfos.length; i++) {
             MockTransactionInfo txInfo = txInfos[i];
-            Xid xid = xidFactory.createBranch(txInfo.globalXid, count++);
+            Xid xid = txManager.getXidFactory().createBranch(txInfo.globalXid, count++);
             xaRes.start(xid, 0);
             txInfo.branches.add(new TransactionBranchInfoImpl(xid, xaRes.getName()));
         }
@@ -144,8 +152,8 @@ public class RecoveryTest extends TestCase {
         addBranch(txInfos23, xares2);
         addBranch(txInfos23, xares3);
         prepareLog(mockLog, txInfos23);
-        Recovery recovery = new RecoveryImpl(txManager);
-        recovery.recoverLog();
+        prepareForReplay();
+        Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
         assertTrue(recovery.getExternalXids().isEmpty());
         assertEquals(9, recovery.localUnrecoveredCount());
@@ -172,7 +180,7 @@ public class RecoveryTest extends TestCase {
     private Xid[] getXidArray(int i) {
         Xid[] xids = new Xid[i];
         for (int j = 0; j < xids.length; j++) {
-            xids[j] = xidFactory.createXid();
+            xids[j] = txManager.getXidFactory().createXid();
         }
         return xids;
     }

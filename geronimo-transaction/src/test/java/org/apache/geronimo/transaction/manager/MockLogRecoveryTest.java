@@ -25,16 +25,21 @@ package org.apache.geronimo.transaction.manager;
  * */
 public class MockLogRecoveryTest extends AbstractRecoveryTest {
 
-    protected void setUp() throws Exception {
-        txLog = new MockLog();
+    private TransactionLog log;
+
+    @Override
+    public void setUp() throws Exception {
+        log = new MockLog();
         super.setUp();
     }
 
-    protected void tearDown() throws Exception {
-        txLog = null;
+    @Override
+    protected TransactionManagerImpl createTransactionManager() throws Exception {
+        return new TransactionManagerImpl(1, new XidFactoryImpl("hi".getBytes()), log);
     }
 
     protected void prepareForReplay() throws Exception {
-        txManager.recovery.recoverLog();
+        Thread.sleep(100);
+        txManager = createTransactionManager();
     }
 }

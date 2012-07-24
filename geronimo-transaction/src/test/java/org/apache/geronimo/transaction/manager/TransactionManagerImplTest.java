@@ -23,6 +23,7 @@ import javax.transaction.InvalidTransactionException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Transaction;
+import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -45,7 +46,11 @@ public class TransactionManagerImplTest extends TestCase {
     TransactionManagerImpl tm;
 
     protected void setUp() throws Exception {
-        tm = new TransactionManagerImpl(10,
+        tm = createTransactionManager();
+    }
+
+    private TransactionManagerImpl createTransactionManager() throws XAException {
+        return new TransactionManagerImpl(10,
                 new XidFactoryImpl("WHAT DO WE CALL IT?".getBytes()), transactionLog);
     }
 
@@ -255,7 +260,8 @@ public class TransactionManagerImplTest extends TestCase {
         tm.suspend();
         tm.prepare(tx);
         //recover
-        tm.recovery.recoverLog();
+        Thread.sleep(100); // Wait a bit for new XidFactoryImpl
+        tm = createTransactionManager();
         recover(r1_1);
         recover(r1_2);
         assertTrue(r1_2.isCommitted());
@@ -285,7 +291,8 @@ public class TransactionManagerImplTest extends TestCase {
         tm.suspend();
         tm.prepare(tx);
         //recover
-        tm.recovery.recoverLog();
+        Thread.sleep(100); // Wait a bit for new XidFactoryImpl
+        tm = createTransactionManager();
         recover(r1_1);
         recover(r1_2);
         assertTrue(!r1_2.isCommitted());

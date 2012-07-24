@@ -35,9 +35,6 @@ import junit.framework.TestCase;
  * */
 public abstract class AbstractRecoveryTest extends TestCase {
 
-    protected TransactionLog txLog;
-
-    protected final XidFactory xidFactory = new XidFactoryImpl();
     protected TransactionManagerImpl txManager;
     private static final String RM1 = "rm1";
     private static final String RM2 = "rm2";
@@ -47,7 +44,11 @@ public abstract class AbstractRecoveryTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        txManager = new TransactionManagerImpl(1, xidFactory, txLog);
+        txManager = createTransactionManager();
+    }
+
+    protected TransactionManagerImpl createTransactionManager() throws Exception {
+        return new TransactionManagerImpl(1, new XidFactoryImpl("hi".getBytes()), null);
     }
 
     public void test2ResOnlineAfterRecoveryStart() throws Exception {
@@ -57,7 +58,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos = makeTxInfos(xids);
         addBranch(txInfos, xares1);
         addBranch(txInfos, xares2);
-        prepareLog(txLog, txInfos);
+        prepareLog(txManager.getTransactionLog(), txInfos);
         prepareForReplay();
         Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
@@ -97,15 +98,15 @@ public abstract class AbstractRecoveryTest extends TestCase {
         MockTransactionInfo[] txInfos12 = makeTxInfos(xids12);
         addBranch(txInfos12, xares1);
         addBranch(txInfos12, xares2);
-        prepareLog(txLog, txInfos12);
+        prepareLog(txManager.getTransactionLog(), txInfos12);
         MockTransactionInfo[] txInfos13 = makeTxInfos(xids13);
         addBranch(txInfos13, xares1);
         addBranch(txInfos13, xares3);
-        prepareLog(txLog, txInfos13);
+        prepareLog(txManager.getTransactionLog(), txInfos13);
         MockTransactionInfo[] txInfos23 = makeTxInfos(xids23);
         addBranch(txInfos23, xares2);
         addBranch(txInfos23, xares3);
-        prepareLog(txLog, txInfos23);
+        prepareLog(txManager.getTransactionLog(), txInfos23);
         prepareForReplay();
         Recovery recovery = txManager.recovery;
         assertTrue(!recovery.hasRecoveryErrors());
@@ -136,7 +137,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
     private Xid[] getXidArray(int i) {
         Xid[] xids = new Xid[i];
         for (int j = 0; j < xids.length; j++) {
-            xids[j] = xidFactory.createXid();
+            xids[j] = txManager.getXidFactory().createXid();
         }
         return xids;
     }
@@ -145,7 +146,7 @@ public abstract class AbstractRecoveryTest extends TestCase {
         for (int i = 0; i < txInfos.length; i++) {
             MockTransactionInfo txInfo = txInfos[i];
             Xid globalXid = txInfo.globalXid;
-            Xid branchXid = xidFactory.createBranch(globalXid, branchCounter++);
+            Xid branchXid = txManager.getXidFactory().createBranch(globalXid, branchCounter++);
             xaRes.start(branchXid, 0);
             txInfo.branches.add(new TransactionBranchInfoImpl(branchXid, xaRes.getName()));
         }

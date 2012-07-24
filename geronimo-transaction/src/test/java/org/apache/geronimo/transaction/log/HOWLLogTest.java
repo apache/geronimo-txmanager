@@ -47,7 +47,7 @@ public class HOWLLogTest extends AbstractLogTest {
 
 
     protected TransactionLog createTransactionLog() throws Exception {
-        XidFactory xidFactory = new XidFactoryImpl();
+        XidFactory xidFactory = new XidFactoryImpl("hi".getBytes());
         HOWLLog howlLog = new HOWLLog(
                 "org.objectweb.howl.log.BlockLogBuffer", //                "bufferClassName",
                 4, //                "bufferSizeKBytes",
