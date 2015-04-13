@@ -99,7 +99,11 @@ public class RecoveryImpl implements Recovery {
         Xid[] prepared = xaResource.recover(XAResource.TMSTARTRSCAN + XAResource.TMENDRSCAN);
         for (int i = 0; prepared != null && i < prepared.length; i++) {
             Xid xid = prepared[i];
-            log.trace("considering recovered xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
+            if (xid.getGlobalTransactionId() == null || xid.getBranchQualifier() == null) {
+                log.warn("Ignoring bad xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
+                continue;
+            }
+            log.trace("Considering recovered xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
             ByteArrayWrapper globalIdWrapper = new ByteArrayWrapper(xid.getGlobalTransactionId());
             XidBranchesPair xidNamesPair = ourXids.get(globalIdWrapper);
             
@@ -226,17 +230,24 @@ public class RecoveryImpl implements Recovery {
         StringBuilder s = new StringBuilder();
         s.append("[Xid:class=").append(xid.getClass().getSimpleName()).append(":globalId=");
         byte[] globalId = xid.getGlobalTransactionId();
-        for (int i = 0; i < globalId.length; i++) {
-            s.append(Integer.toHexString(globalId[i]));
+        if (globalId == null) {
+            s.append("null");
+        } else {
+            for (int i = 0; i < globalId.length; i++) {
+                s.append(Integer.toHexString(globalId[i]));
+            }
+            s.append(",length=").append(globalId.length);
         }
-        s.append(",length=").append(globalId.length);
         s.append(",branchId=");
         byte[] branchId = xid.getBranchQualifier();
-        for (int i = 0; i < branchId.length; i++) {
-            s.append(Integer.toHexString(branchId[i]));
+        if (branchId == null) {
+            s.append("null");
+        } else {
+            for (int i = 0; i < branchId.length; i++) {
+                s.append(Integer.toHexString(branchId[i]));
+            }
+            s.append(",length=").append(branchId.length);
         }
-        s.append(",length=");
-        s.append(branchId.length);
         s.append("]");
         return s.toString();
     }

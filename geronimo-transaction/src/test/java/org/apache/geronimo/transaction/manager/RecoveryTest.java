@@ -99,6 +99,67 @@ public class RecoveryTest extends TestCase {
 
     }
 
+    public void testInvalidXid() throws Exception {
+        final Xid[] xids = new Xid[] { new Xid() {
+            @Override
+            public int getFormatId() {
+                return 0;
+            }
+            @Override
+            public byte[] getGlobalTransactionId() {
+                return null;
+            }
+            @Override
+            public byte[] getBranchQualifier() {
+                return new byte[0];
+            }
+        } };
+        final NamedXAResource xares = new NamedXAResource() {
+            @Override
+            public String getName() {
+                return RM1;
+            }
+            @Override
+            public void commit(Xid xid, boolean b) throws XAException {
+            }
+            @Override
+            public void end(Xid xid, int i) throws XAException {
+            }
+            @Override
+            public void forget(Xid xid) throws XAException {
+            }
+            @Override
+            public int getTransactionTimeout() throws XAException {
+                return 0;
+            }
+            @Override
+            public boolean isSameRM(XAResource xaResource) throws XAException {
+                return false;
+            }
+            @Override
+            public int prepare(Xid xid) throws XAException {
+                return 0;
+            }
+            @Override
+            public Xid[] recover(int i) throws XAException {
+                return xids;
+            }
+            @Override
+            public void rollback(Xid xid) throws XAException {
+            }
+            @Override
+            public boolean setTransactionTimeout(int i) throws XAException {
+                return false;
+            }
+            @Override
+            public void start(Xid xid, int i) throws XAException {
+            }
+        };
+        prepareForReplay();
+        Recovery recovery = txManager.recovery;
+        recovery.recoverResourceManager(xares);
+    }
+
     private void addBranch(MockTransactionInfo[] txInfos, MockXAResource xaRes) throws XAException {
         for (int i = 0; i < txInfos.length; i++) {
             MockTransactionInfo txInfo = txInfos[i];
