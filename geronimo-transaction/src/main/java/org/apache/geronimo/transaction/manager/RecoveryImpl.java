@@ -114,12 +114,7 @@ public class RecoveryImpl implements Recovery {
                 // This is a bit wasteful, but given our management of XAResources by "name", is about the best we can do.
                 if (isNameInTransaction(xidNamesPair, name, xid)) {
                     log.trace("This xid was prepared from this XAResource: committing");
-                    try {
-                        xaResource.commit(xid, false);
-                    } catch(XAException e) {
-                        recoveryErrors.add(e);
-                        log.error("Recovery error", e);
-                    }
+                    commit(xaResource, xid);
                     removeNameFromTransaction(xidNamesPair, name, true);
                 } else {
                     log.trace("This xid was prepared from another XAResource, ignoring");
@@ -127,24 +122,14 @@ public class RecoveryImpl implements Recovery {
             } else if (txManager.getXidFactory().matchesGlobalId(xid.getGlobalTransactionId())) {
                 //ours, but prepare not logged
                 log.trace("this xid was initiated from this tm but not prepared: rolling back");
-                try {
-                    xaResource.rollback(xid);
-                } catch (XAException e) {
-                    recoveryErrors.add(e);
-                    log.error("Could not roll back", e);
-                }
+                rollback(xaResource, xid);
             } else if (txManager.getXidFactory().matchesBranchId(xid.getBranchQualifier())) {
                 //our branch, but we did not start this tx.
                 TransactionImpl externalTx = externalGlobalIdMap.get(xid.getGlobalTransactionId());
                 if (externalTx == null) {
                     //we did not prepare this branch, rollback.
                     log.trace("this xid is from an external transaction and was not prepared: rolling back");
-                    try {
-                        xaResource.rollback(xid);
-                    } catch (XAException e) {
-                        recoveryErrors.add(e);
-                        log.error("Could not roll back", e);
-                    }
+                    rollback(xaResource, xid);
                 } else {
                     log.trace("this xid is from an external transaction and was prepared in this tm.  Waiting for instructions from transaction originator");
                     //we prepared this branch, must wait for commit/rollback command.
@@ -157,6 +142,48 @@ public class RecoveryImpl implements Recovery {
         if (transactionsForName != null) {
             for (XidBranchesPair xidBranchesPair : transactionsForName) {
                 removeNameFromTransaction(xidBranchesPair, name, false);
+            }
+        }
+    }
+
+    private void commit(NamedXAResource xaResource, Xid xid) {
+        doCommitOrRollback(xaResource, xid, true);
+    }
+
+    private void rollback(NamedXAResource xaResource, Xid xid) {
+        doCommitOrRollback(xaResource, xid, false);
+    }
+
+    private void doCommitOrRollback(NamedXAResource xaResource, Xid xid, boolean commit) {
+        try {
+            if (commit) {
+                xaResource.commit(xid, false);
+            } else {
+                xaResource.rollback(xid);
+            }
+        } catch (XAException e) {
+            try {
+                if (e.errorCode == XAException.XA_HEURRB) {
+                    log.info("Transaction has been heuristically rolled back");
+                    xaResource.forget(xid);
+                } else if (e.errorCode == XAException.XA_HEURMIX) {
+                    log.info("Transaction has been heuristically committed and rolled back");
+                    xaResource.forget(xid);
+                } else if (e.errorCode == XAException.XA_HEURCOM) {
+                    log.info("Transaction has been heuristically committed");
+                    xaResource.forget(xid);
+                } else {
+                    recoveryErrors.add(e);
+                    log.error("Could not roll back", e);
+                }
+            } catch (XAException e2) {
+                if (e2.errorCode == XAException.XAER_NOTA) {
+                    // NOTA in response to forget, means the resource already forgot the transaction
+                    // ignore
+                } else {
+                    recoveryErrors.add(e);
+                    log.error("Could not roll back", e);
+                }
             }
         }
     }
