@@ -538,6 +538,11 @@ public class TransactionImpl implements Transaction {
     private void markRollbackCause(Throwable e) {
         if (markRollbackCause == null) {
             markRollbackCause = e;
+        } else if (markRollbackCause instanceof SetRollbackOnlyException) {
+            Throwable cause = markRollbackCause.getCause();
+            if (cause == null) {
+                markRollbackCause.initCause(e);
+            }
         }
     }
 
