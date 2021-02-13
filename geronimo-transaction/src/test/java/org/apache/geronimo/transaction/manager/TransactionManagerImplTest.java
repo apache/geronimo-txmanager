@@ -17,6 +17,10 @@
 
 package org.apache.geronimo.transaction.manager;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Map;
 
 import javax.transaction.InvalidTransactionException;
@@ -45,13 +49,16 @@ public class TransactionManagerImplTest extends TestCase {
 
     TransactionManagerImpl tm;
 
+    MutableClock clock;
+
     protected void setUp() throws Exception {
+        clock = new MutableClock(Clock.systemUTC());
         tm = createTransactionManager();
     }
 
     private TransactionManagerImpl createTransactionManager() throws XAException {
         return new TransactionManagerImpl(10,
-                new XidFactoryImpl("WHAT DO WE CALL IT?".getBytes()), transactionLog);
+                new XidFactoryImpl("WHAT DO WE CALL IT?".getBytes()), transactionLog, clock);
     }
 
     protected void tearDown() throws Exception {
@@ -312,8 +319,7 @@ public class TransactionManagerImplTest extends TestCase {
         long timeout = tm.getTransactionTimeoutMilliseconds(0L);
         tm.setTransactionTimeout((int)timeout/4000);
         tm.begin();
-        System.out.println("Test to sleep for " + timeout + " millisecs");
-        Thread.sleep(timeout);
+        clock.advance(Duration.ofMillis(timeout));
         try
         {
             tm.commit();
@@ -325,8 +331,7 @@ public class TransactionManagerImplTest extends TestCase {
 
         // Now test if the default timeout is active
         tm.begin();
-        System.out.println("Test to sleep for " + (timeout/2) + " millisecs");
-        Thread.sleep((timeout/2));
+        clock.advance(Duration.ofMillis(timeout/2));
         tm.commit();
         // Its a failure if exception occurs.
     }    
@@ -434,4 +439,39 @@ public class TransactionManagerImplTest extends TestCase {
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
         assertNull(tm.getTransaction()); 
     }
+
+    /**
+     * Clock that can be manually advanced.
+     */
+    public static class MutableClock extends Clock {
+
+        protected final Clock clock;
+
+        protected Duration delta;
+
+        public MutableClock(Clock clock) {
+            this.clock = clock;
+            delta = Duration.ZERO;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return clock.getZone();
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Instant instant() {
+            return clock.instant().plus(delta);
+        }
+
+        public void advance(Duration duration) {
+            delta = delta.plus(duration);
+        }
+    }
+
 }

@@ -17,6 +17,7 @@
 
 package org.apache.geronimo.transaction.manager;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -50,6 +51,7 @@ public class TransactionImpl implements Transaction {
 
     private final TransactionManagerImpl txManager;
     private final Xid xid;
+    private final Clock clock;
     private final long timeout;
     private final List<Synchronization> syncList = new ArrayList<Synchronization>(5);
     private final List<Synchronization> interposedSyncList = new ArrayList<Synchronization>(3);
@@ -66,10 +68,19 @@ public class TransactionImpl implements Transaction {
         this(txManager.getXidFactory().createXid(), txManager, transactionTimeoutMilliseconds);
     }
 
+    TransactionImpl(TransactionManagerImpl txManager, long transactionTimeoutMilliseconds, Clock clock) throws SystemException {
+        this(txManager.getXidFactory().createXid(), txManager, transactionTimeoutMilliseconds, clock);
+    }
+
     TransactionImpl(Xid xid, TransactionManagerImpl txManager, long transactionTimeoutMilliseconds) throws SystemException {
+        this(xid, txManager, transactionTimeoutMilliseconds, null);
+    }
+
+    TransactionImpl(Xid xid, TransactionManagerImpl txManager, long transactionTimeoutMilliseconds, Clock clock) throws SystemException {
         this.txManager = txManager;
         this.xid = xid;
-        this.timeout = transactionTimeoutMilliseconds + TransactionTimer.getCurrentTime();
+        this.clock = clock == null ? Clock.systemUTC() : clock;
+        this.timeout = transactionTimeoutMilliseconds + this.clock.millis();
         try {
             txManager.getTransactionLog().begin(xid);
         } catch (LogException e) {
@@ -87,6 +98,7 @@ public class TransactionImpl implements Transaction {
         this.txManager = txManager;
         this.xid = xid;
         status = Status.STATUS_PREPARED;
+        clock = Clock.systemUTC();
         //TODO is this a good idea?
         this.timeout = Long.MAX_VALUE;
     }
@@ -208,7 +220,7 @@ public class TransactionImpl implements Transaction {
             Xid branchId = txManager.getXidFactory().createBranch(xid, resourceManagers.size() + 1);
             xaRes.start(branchId, XAResource.TMNOFLAGS);
             //Set the xaresource timeout in seconds to match the time left in this tx.
-            xaRes.setTransactionTimeout((int)(timeout - TransactionTimer.getCurrentTime())/1000);
+            xaRes.setTransactionTimeout((int)(timeout - clock.millis())/1000);
             activeXaResources.put(xaRes, addBranchXid(xaRes, branchId));
             return true;
         } catch (XAException e) {
@@ -262,7 +274,7 @@ public class TransactionImpl implements Transaction {
         beforePrepare();
 
         try {
-            if (TransactionTimer.getCurrentTime() > timeout) {
+            if (clock.millis() > timeout) {
                 markRollbackCause(new Exception("Transaction has timed out"));
                 status = Status.STATUS_MARKED_ROLLBACK;
             }

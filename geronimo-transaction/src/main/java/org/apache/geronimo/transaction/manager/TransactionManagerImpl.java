@@ -17,6 +17,7 @@
 
 package org.apache.geronimo.transaction.manager;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +49,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     private final TransactionLog transactionLog;
     private final XidFactory xidFactory;
     private final int defaultTransactionTimeoutMilliseconds;
+    private final Clock clock;
     private final ThreadLocal<Long> transactionTimeoutMilliseconds = new ThreadLocal<Long>();
     private final ThreadLocal<Transaction> threadTx = new ThreadLocal<Transaction>();
     private final ConcurrentHashMap<Transaction, Thread> associatedTransactions = new ConcurrentHashMap<Transaction, Thread>();
@@ -83,10 +85,15 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     public TransactionManagerImpl(int defaultTransactionTimeoutSeconds, XidFactory xidFactory, TransactionLog transactionLog) throws XAException {
+        this(defaultTransactionTimeoutSeconds, xidFactory, transactionLog, null);
+    }
+
+    public TransactionManagerImpl(int defaultTransactionTimeoutSeconds, XidFactory xidFactory, TransactionLog transactionLog, Clock clock) throws XAException {
         if (defaultTransactionTimeoutSeconds <= 0) {
             throw new IllegalArgumentException("defaultTransactionTimeoutSeconds must be positive: attempted value: " + defaultTransactionTimeoutSeconds);
         }
         this.defaultTransactionTimeoutMilliseconds = defaultTransactionTimeoutSeconds * 1000;
+        this.clock = clock;
 
         if (transactionLog == null) {
             this.transactionLog = new UnrecoverableLog();
@@ -156,7 +163,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getStatus() != Status.STATUS_NO_TRANSACTION) {
             throw new NotSupportedException("Nested Transactions are not supported");
         }
-        TransactionImpl tx = new TransactionImpl(this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        TransactionImpl tx = new TransactionImpl(this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds), clock);
 //        timeoutTimer.schedule(tx, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
         try {
             associate(tx);
@@ -274,7 +281,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds < 0) {
             throw new SystemException("transaction timeout must be positive or 0 to reset to default");
         }
-        return new TransactionImpl(xid, this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        return new TransactionImpl(xid, this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds), clock);
     }
 
     public void commit(Transaction tx, boolean onePhase) throws XAException {
