@@ -50,6 +50,7 @@ public class TransactionImpl implements Transaction {
 
     private final TransactionManagerImpl txManager;
     private final Xid xid;
+    private final CurrentTimeMsProvider timeProvider;
     private final long timeout;
     private final List<Synchronization> syncList = new ArrayList<Synchronization>(5);
     private final List<Synchronization> interposedSyncList = new ArrayList<Synchronization>(3);
@@ -66,10 +67,19 @@ public class TransactionImpl implements Transaction {
         this(txManager.getXidFactory().createXid(), txManager, transactionTimeoutMilliseconds);
     }
 
+    TransactionImpl(TransactionManagerImpl txManager, long transactionTimeoutMilliseconds, CurrentTimeMsProvider timeProvider) throws SystemException {
+        this(txManager.getXidFactory().createXid(), txManager, transactionTimeoutMilliseconds, timeProvider);
+    }
+
     TransactionImpl(Xid xid, TransactionManagerImpl txManager, long transactionTimeoutMilliseconds) throws SystemException {
+        this(xid, txManager, transactionTimeoutMilliseconds, null);
+    }
+
+    TransactionImpl(Xid xid, TransactionManagerImpl txManager, long transactionTimeoutMilliseconds, CurrentTimeMsProvider timeProvider) throws SystemException {
         this.txManager = txManager;
         this.xid = xid;
-        this.timeout = transactionTimeoutMilliseconds + TransactionTimer.getCurrentTime();
+        this.timeProvider = timeProvider == null ? SystemCurrentTime.INSTANCE : timeProvider;
+        this.timeout = transactionTimeoutMilliseconds + this.timeProvider.now();
         try {
             txManager.getTransactionLog().begin(xid);
         } catch (LogException e) {
@@ -87,6 +97,7 @@ public class TransactionImpl implements Transaction {
         this.txManager = txManager;
         this.xid = xid;
         status = Status.STATUS_PREPARED;
+        timeProvider = SystemCurrentTime.INSTANCE;
         //TODO is this a good idea?
         this.timeout = Long.MAX_VALUE;
     }
@@ -208,7 +219,7 @@ public class TransactionImpl implements Transaction {
             Xid branchId = txManager.getXidFactory().createBranch(xid, resourceManagers.size() + 1);
             xaRes.start(branchId, XAResource.TMNOFLAGS);
             //Set the xaresource timeout in seconds to match the time left in this tx.
-            xaRes.setTransactionTimeout((int)(timeout - TransactionTimer.getCurrentTime())/1000);
+            xaRes.setTransactionTimeout((int)(timeout - timeProvider.now())/1000);
             activeXaResources.put(xaRes, addBranchXid(xaRes, branchId));
             return true;
         } catch (XAException e) {
@@ -262,7 +273,7 @@ public class TransactionImpl implements Transaction {
         beforePrepare();
 
         try {
-            if (TransactionTimer.getCurrentTime() > timeout) {
+            if (timeProvider.now() > timeout) {
                 markRollbackCause(new Exception("Transaction has timed out"));
                 status = Status.STATUS_MARKED_ROLLBACK;
             }
