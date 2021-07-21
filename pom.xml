@@ -38,9 +38,10 @@
     <description>Geronimo Transaction Manager</description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/components/txmanager/trunk</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/components/txmanager/trunk</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</url>
+        <tag>HEAD</tag>
     </scm>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
