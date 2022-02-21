@@ -155,6 +155,10 @@
                                 </artifactSet>
                                 <relocations>
                                     <relocation>
+                                        <pattern>javax.resource</pattern>
+                                        <shadedPattern>jakarta.resource</shadedPattern>
+                                    </relocation>
+                                    <relocation>
                                         <pattern>javax.transaction</pattern>
                                         <shadedPattern>jakarta.transaction</shadedPattern>
                                         <excludes>
