@@ -162,6 +162,11 @@
                                         <pattern>javax.validation</pattern>
                                         <shadedPattern>jakarta.validation</shadedPattern>
                                     </relocation>
+                                    <!-- These must remain in javax namespace -->
+                                    <relocation>
+                                        <pattern>jakarta.transaction.xa</pattern>
+                                        <shadedPattern>javax.transaction.xa</shadedPattern>
+                                    </relocation>
                                 </relocations>
                             </configuration>
                         </execution>
