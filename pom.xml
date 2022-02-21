@@ -156,51 +156,51 @@
                                 <relocations>
                                     <relocation>
                                         <pattern>javax.transaction.HeuristicMixedException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.HeuristicMixedException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.HeuristicRollbackException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.HeuristicRollbackException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.InvalidTransactionException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.InvalidTransactionException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.NotSupportedException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.NotSupportedException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.RollbackException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.RollbackException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.Status</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.Status</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.Synchronization</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.Synchronization</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.SystemException</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.SystemException</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.Transaction</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.Transaction</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.TransactionManager</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.TransactionManager</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.TransactionSynchronizationRegistry</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.TransactionSynchronizationRegistry</shadedPattern>
                                     </relocation>
                                     <relocation>
                                         <pattern>javax.transaction.UserTransaction</pattern>
-                                        <shadedPattern>jakarta.transaction</shadedPattern>
+                                        <shadedPattern>jakarta.transaction.UserTransaction</shadedPattern>
                                     </relocation>
 
                                     <relocation>
