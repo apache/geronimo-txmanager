@@ -49,6 +49,10 @@
         <siteId>components/${project.artifactId}</siteId>
 
         <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+        <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
+
+        <!-- Package attribute of the JAR artifact. -->
+        <package-name>${package-guess}</package-name>
     </properties>
 
     <dependencyManagement>
@@ -204,6 +208,36 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <!--
+                Build Helper Maven plugin -
+                https://www.mojohaus.org/build-helper-maven-plugin/
+                -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${build-helper-maven-plugin.version}</version>
+                    <executions>
+                        <!--
+                        Make a guess at a reasonable & legal package prefix. This value
+                        is used for package-name and automatic-module-name by default.
+                        -->
+                        <execution>
+                            <id>guess-package</id>
+                            <goals>
+                                <goal>regex-property</goal>
+                            </goals>
+                            <configuration>
+                                <name>package-guess</name>
+                                <value>${project.groupId}.${project.artifactId}</value>
+                                <regex>[^a-z0-9_.]+</regex>
+                                <replacement>_</replacement>
+                                <failIfNoMatch>false</failIfNoMatch>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
             </plugins>
         </pluginManagement>
     </build>
