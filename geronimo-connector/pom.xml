@@ -36,6 +36,9 @@
     <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
         <siteId>components/${project.artifactId}</siteId>
+
+        <!-- Package attribute of the JAR artifact. -->
+        <jpms.module.name>${project.groupId}.geronimo_connector</jpms.module.name>
     </properties>
 
     <dependencies>
