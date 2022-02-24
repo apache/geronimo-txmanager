@@ -52,7 +52,7 @@
         <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
 
         <!-- Package attribute of the JAR artifact. -->
-        <package-name>${package-guess}</package-name>
+        <jpms.module.name>${package-guess}</jpms.module.name>
     </properties>
 
     <dependencyManagement>
