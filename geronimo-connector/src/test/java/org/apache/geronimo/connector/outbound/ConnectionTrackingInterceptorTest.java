@@ -20,7 +20,7 @@ package org.apache.geronimo.connector.outbound;
 import java.util.Collection;
 import java.util.HashSet;
 
-import javax.resource.ResourceException;
+import jakarta.resource.ResourceException;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 

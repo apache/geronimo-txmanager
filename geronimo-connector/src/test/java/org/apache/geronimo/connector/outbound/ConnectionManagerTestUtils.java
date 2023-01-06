@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.security.auth.Subject;
-import javax.transaction.UserTransaction;
+import jakarta.transaction.UserTransaction;
 
 import org.apache.geronimo.connector.mock.ConnectionExtension;
 import org.apache.geronimo.connector.mock.MockConnectionFactory;

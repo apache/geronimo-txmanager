@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.DissociatableManagedConnection;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.DissociatableManagedConnection;
 
 import org.apache.geronimo.connector.outbound.ConnectionInfo;
 import org.apache.geronimo.connector.outbound.ConnectionReturnAction;

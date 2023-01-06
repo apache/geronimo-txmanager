@@ -20,10 +20,10 @@ package org.apache.geronimo.connector.outbound;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.resource.ResourceException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import jakarta.resource.ResourceException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.ConnectionReleaser;
 import org.apache.geronimo.connector.ConnectorTransactionContext;

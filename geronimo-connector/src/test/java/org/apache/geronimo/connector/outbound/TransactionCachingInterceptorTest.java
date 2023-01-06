@@ -17,10 +17,10 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.resource.ResourceException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.Status;
+import jakarta.resource.ResourceException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Status;
 
 import org.apache.geronimo.connector.ConnectorTransactionContext;
 import org.apache.geronimo.transaction.manager.TransactionManagerImpl;

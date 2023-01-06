@@ -16,8 +16,8 @@
  */
 package org.apache.geronimo.connector.outbound.connectiontracking;
 
-import javax.resource.ResourceException;
-import javax.transaction.Transaction;
+import jakarta.resource.ResourceException;
+import jakarta.transaction.Transaction;
 
 import org.apache.geronimo.transaction.manager.TransactionManagerMonitor;
 import org.slf4j.Logger;

@@ -17,8 +17,8 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnection;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

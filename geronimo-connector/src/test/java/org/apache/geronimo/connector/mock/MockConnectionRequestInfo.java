@@ -17,8 +17,8 @@
 
 package org.apache.geronimo.connector.mock;
 
-import javax.resource.cci.ConnectionSpec;
-import javax.resource.spi.ConnectionRequestInfo;
+import jakarta.resource.cci.ConnectionSpec;
+import jakarta.resource.spi.ConnectionRequestInfo;
 
 /**
  *

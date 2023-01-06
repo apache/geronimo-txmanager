@@ -24,20 +24,20 @@ import java.util.List;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
-import javax.resource.NotSupportedException;
-import javax.resource.spi.work.ExecutionContext;
-import javax.resource.spi.work.WorkContext;
-import javax.resource.spi.work.WorkContextErrorCodes;
-import javax.resource.spi.work.WorkContextProvider;
-import javax.resource.spi.work.TransactionContext;
-import javax.resource.spi.work.Work;
-import javax.resource.spi.work.WorkAdapter;
-import javax.resource.spi.work.WorkCompletedException;
-import javax.resource.spi.work.WorkEvent;
-import javax.resource.spi.work.WorkException;
-import javax.resource.spi.work.WorkListener;
-import javax.resource.spi.work.WorkManager;
-import javax.resource.spi.work.WorkRejectedException;
+import jakarta.resource.NotSupportedException;
+import jakarta.resource.spi.work.ExecutionContext;
+import jakarta.resource.spi.work.WorkContext;
+import jakarta.resource.spi.work.WorkContextErrorCodes;
+import jakarta.resource.spi.work.WorkContextProvider;
+import jakarta.resource.spi.work.TransactionContext;
+import jakarta.resource.spi.work.Work;
+import jakarta.resource.spi.work.WorkAdapter;
+import jakarta.resource.spi.work.WorkCompletedException;
+import jakarta.resource.spi.work.WorkEvent;
+import jakarta.resource.spi.work.WorkException;
+import jakarta.resource.spi.work.WorkListener;
+import jakarta.resource.spi.work.WorkManager;
+import jakarta.resource.spi.work.WorkRejectedException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +151,7 @@ public class WorkerContext implements Work {
 *                      the submitted Work instance must be executed.
      * @param workListener  an object which would be notified when the various
      * @param workContextHandlers WorkContextHandlers supported by this work manager
-     * @throws javax.resource.spi.work.WorkRejectedException if executionContext supplied yet Work implements WorkContextProvider
+     * @throws jakarta.resource.spi.work.WorkRejectedException if executionContext supplied yet Work implements WorkContextProvider
      */
     public WorkerContext(Work aWork,
                          long aStartTimeout,
@@ -176,7 +176,7 @@ public class WorkerContext implements Work {
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.Work#release()
+     * @see jakarta.resource.spi.work.Work#release()
      */
     public void release() {
         adaptee.release();

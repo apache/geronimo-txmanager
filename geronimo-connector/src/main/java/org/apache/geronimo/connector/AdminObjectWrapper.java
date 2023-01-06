@@ -19,11 +19,11 @@ package org.apache.geronimo.connector;
 
 import java.util.Set; 
 
-import javax.resource.spi.ResourceAdapterAssociation;
-import javax.validation.ConstraintViolation; 
-import javax.validation.ConstraintViolationException; 
-import javax.validation.Validator; 
-import javax.validation.ValidatorFactory; 
+import jakarta.resource.spi.ResourceAdapterAssociation;
+import jakarta.validation.ConstraintViolation; 
+import jakarta.validation.ConstraintViolationException; 
+import jakarta.validation.Validator; 
+import jakarta.validation.ValidatorFactory; 
 
 
 /**

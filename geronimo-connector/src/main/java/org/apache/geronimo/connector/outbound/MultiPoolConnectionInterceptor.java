@@ -20,8 +20,8 @@ package org.apache.geronimo.connector.outbound;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ConnectionRequestInfo;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ConnectionRequestInfo;
 import javax.security.auth.Subject;
 
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.PoolingSupport;

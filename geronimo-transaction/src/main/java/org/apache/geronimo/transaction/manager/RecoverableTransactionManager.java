@@ -20,7 +20,7 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 
 /**
  * @version $Rev$ $Date$

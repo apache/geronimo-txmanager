@@ -20,8 +20,8 @@
 
 package org.apache.geronimo.connector.work;
 
-import javax.resource.spi.work.WorkContext;
-import javax.resource.spi.work.WorkCompletedException;
+import jakarta.resource.spi.work.WorkContext;
+import jakarta.resource.spi.work.WorkCompletedException;
 
 /**
  * @version $Rev$ $Date$

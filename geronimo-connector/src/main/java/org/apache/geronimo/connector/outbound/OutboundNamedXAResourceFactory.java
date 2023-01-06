@@ -20,9 +20,9 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnectionFactory;
-import javax.transaction.SystemException;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnectionFactory;
+import jakarta.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;

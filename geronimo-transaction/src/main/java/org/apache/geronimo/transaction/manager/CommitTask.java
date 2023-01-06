@@ -22,8 +22,8 @@ package org.apache.geronimo.transaction.manager;
 
 import java.util.List;
 
-import javax.transaction.Status;
-import javax.transaction.SystemException;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 import org.apache.geronimo.transaction.manager.TransactionImpl.ReturnableTransactionBranch;

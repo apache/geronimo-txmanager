@@ -20,12 +20,12 @@
 
 package org.apache.geronimo.connector.work;
 
-import javax.resource.spi.work.TransactionContext;
-import javax.resource.spi.work.WorkCompletedException;
-import javax.resource.spi.work.WorkContext;
+import jakarta.resource.spi.work.TransactionContext;
+import jakarta.resource.spi.work.WorkCompletedException;
+import jakarta.resource.spi.work.WorkContext;
 import javax.transaction.xa.XAException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.SystemException;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.transaction.SystemException;
 
 import org.apache.geronimo.transaction.manager.XAWork;
 import org.apache.geronimo.transaction.manager.ImportedTransactionActiveException;

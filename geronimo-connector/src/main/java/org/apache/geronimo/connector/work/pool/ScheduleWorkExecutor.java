@@ -19,7 +19,7 @@ package org.apache.geronimo.connector.work.pool;
 
 import java.util.concurrent.Executor;
 
-import javax.resource.spi.work.WorkException;
+import jakarta.resource.spi.work.WorkException;
 
 import org.apache.geronimo.connector.work.WorkerContext;
 

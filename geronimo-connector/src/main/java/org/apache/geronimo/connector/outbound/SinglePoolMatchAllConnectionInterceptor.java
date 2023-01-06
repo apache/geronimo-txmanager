@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnection;
-import javax.resource.spi.ManagedConnectionFactory;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnection;
+import jakarta.resource.spi.ManagedConnectionFactory;
 
 /**
  * This pool is the most spec-compliant pool.  It can be used by itself with no partitioning.

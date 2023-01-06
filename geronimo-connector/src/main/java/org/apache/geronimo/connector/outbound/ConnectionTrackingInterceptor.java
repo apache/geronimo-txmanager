@@ -20,9 +20,9 @@ package org.apache.geronimo.connector.outbound;
 import java.util.Collection;
 import java.util.Iterator;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.DissociatableManagedConnection;
-import javax.resource.spi.ManagedConnection;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.DissociatableManagedConnection;
+import jakarta.resource.spi.ManagedConnection;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 

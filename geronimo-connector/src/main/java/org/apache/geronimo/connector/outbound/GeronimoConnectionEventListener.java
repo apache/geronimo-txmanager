@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import javax.resource.spi.ConnectionEvent;
-import javax.resource.spi.ConnectionEventListener;
+import jakarta.resource.spi.ConnectionEvent;
+import jakarta.resource.spi.ConnectionEventListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -20,11 +20,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import javax.resource.spi.XATerminator;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
+
+import jakarta.resource.spi.XATerminator;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -54,7 +55,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
     }
 
     /**
-     * @see javax.resource.spi.XATerminator#commit(javax.transaction.xa.Xid, boolean)
+     * @see jakarta.resource.spi.XATerminator#commit(javax.transaction.xa.Xid, boolean)
      */
     public void commit(Xid xid, boolean onePhase) throws XAException {
         Transaction importedTransaction;
@@ -75,7 +76,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
     }
 
     /**
-     * @see javax.resource.spi.XATerminator#forget(javax.transaction.xa.Xid)
+     * @see jakarta.resource.spi.XATerminator#forget(javax.transaction.xa.Xid)
      */
     public void forget(Xid xid) throws XAException {
         Transaction importedTransaction;
@@ -96,7 +97,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
     }
 
     /**
-     * @see javax.resource.spi.XATerminator#prepare(javax.transaction.xa.Xid)
+     * @see jakarta.resource.spi.XATerminator#prepare(javax.transaction.xa.Xid)
      */
     public int prepare(Xid xid) throws XAException {
         Transaction importedTransaction;
@@ -116,7 +117,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
     }
 
     /**
-     * @see javax.resource.spi.XATerminator#recover(int)
+     * @see jakarta.resource.spi.XATerminator#recover(int)
      */
     public Xid[] recover(int flag) throws XAException {
         if (!isInRecovery) {
@@ -150,7 +151,7 @@ public class GeronimoTransactionManager extends TransactionManagerImpl implement
     }
 
     /**
-     * @see javax.resource.spi.XATerminator#rollback(javax.transaction.xa.Xid)
+     * @see jakarta.resource.spi.XATerminator#rollback(javax.transaction.xa.Xid)
      */
     public void rollback(Xid xid) throws XAException {
         Transaction importedTransaction;

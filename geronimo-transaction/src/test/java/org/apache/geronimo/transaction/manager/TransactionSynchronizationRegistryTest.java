@@ -17,12 +17,12 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.Synchronization;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.NotSupportedException;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicRollbackException;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.NotSupportedException;
 
 import junit.framework.TestCase;
 

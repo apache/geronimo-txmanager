@@ -18,7 +18,7 @@
 package org.apache.geronimo.connector.outbound;
 
 import javax.security.auth.Subject;
-import javax.resource.ResourceException;
+import jakarta.resource.ResourceException;
 
 /**
  *

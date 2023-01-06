@@ -17,8 +17,8 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.resource.spi.ManagedConnectionFactory;
-import javax.transaction.TransactionManager;
+import jakarta.resource.spi.ManagedConnectionFactory;
+import jakarta.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.LocalTransactions;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.NoTransactions;
@@ -101,14 +101,14 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             if (mcf == null) {
                 throw new NullPointerException("No ManagedConnectionFactory supplied for " + name);
             }
-            if (mcf instanceof javax.resource.spi.TransactionSupport) {
-                javax.resource.spi.TransactionSupport txSupport = (javax.resource.spi.TransactionSupport)mcf;
-                javax.resource.spi.TransactionSupport.TransactionSupportLevel txSupportLevel = txSupport.getTransactionSupport();
+            if (mcf instanceof jakarta.resource.spi.TransactionSupport) {
+                jakarta.resource.spi.TransactionSupport txSupport = (jakarta.resource.spi.TransactionSupport)mcf;
+                jakarta.resource.spi.TransactionSupport.TransactionSupportLevel txSupportLevel = txSupport.getTransactionSupport();
                 log.info("Runtime TransactionSupport level: " + txSupportLevel);
                 if (txSupportLevel != null) {
-                    if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.NoTransaction) {
+                    if (txSupportLevel == jakarta.resource.spi.TransactionSupport.TransactionSupportLevel.NoTransaction) {
                         transactionSupport = NoTransactions.INSTANCE;
-                    } else if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.LocalTransaction) {
+                    } else if (txSupportLevel == jakarta.resource.spi.TransactionSupport.TransactionSupportLevel.LocalTransaction) {
                         if (transactionSupport != NoTransactions.INSTANCE) {
                             transactionSupport = LocalTransactions.INSTANCE;
                         }

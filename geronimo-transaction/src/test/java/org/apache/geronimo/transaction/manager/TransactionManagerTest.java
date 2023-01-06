@@ -17,9 +17,9 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.Status;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.Status;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
 import junit.framework.TestCase;

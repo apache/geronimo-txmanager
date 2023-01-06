@@ -23,8 +23,8 @@ package org.apache.geronimo.connector.outbound;
 import java.util.List;
 import java.util.ArrayList;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnectionFactory;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnectionFactory;
 
 import junit.framework.TestCase;
 import org.apache.geronimo.connector.mock.MockManagedConnectionFactory;

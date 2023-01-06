@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.connector.mock;
 
-import javax.resource.cci.ConnectionFactory;
+import jakarta.resource.cci.ConnectionFactory;
 
 /**
  *

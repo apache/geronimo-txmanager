@@ -19,7 +19,7 @@ package org.apache.geronimo.connector.outbound;
 
 import java.util.Collections;
 
-import javax.resource.ResourceException;
+import jakarta.resource.ResourceException;
 
 /**
  *
