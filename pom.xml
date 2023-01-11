@@ -23,9 +23,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.geronimo.genesis</groupId>
-        <artifactId>genesis-java8-flava</artifactId>
-        <version>2.4</version>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>29</version>
         <relativePath />
     </parent>
 
@@ -44,11 +44,10 @@
         <tag>HEAD</tag>
     </scm>
 
-    <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
+    <url>https://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
         <siteId>components/${project.artifactId}</siteId>
 
-        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
         <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
 
         <!-- Package attribute of the JAR artifact. -->
@@ -57,8 +56,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- internal -->
-
             <dependency>
                 <groupId>org.apache.geronimo.components</groupId>
                 <artifactId>geronimo-transaction</artifactId>
@@ -105,26 +102,20 @@
         </dependencies>
     </dependencyManagement>
 
-    <profiles>
-        <profile>
-            <id>java8-doclint-disabled</id>
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-
-            <properties>
-                <additionalparam>-Xdoclint:none</additionalparam>
-                <javadoc.opts>-Xdoclint:none</javadoc.opts>
-            </properties>
-        </profile>
-    </profiles>
     <build>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>11</source>
+                        <target>11</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -132,17 +123,36 @@
                                 <goal>jar</goal>
                             </goals>
                             <configuration>
-                                <additionalparam>${javadoc.opts}</additionalparam>
+                                <quiet>true</quiet>
+                                <source>11</source>
+                                <doclint>none</doclint>
                             </configuration>
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Automatic-Module-Name>${jpms.module.name}</Automatic-Module-Name>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>2.0.1</version>
+                    <version>5.1.8</version>
+                    <extensions>true</extensions>
                     <configuration>
                         <instructions>
+                            <Implementation-Title>${project.name}</Implementation-Title>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Bundle-DocURL>${project.url}</Bundle-DocURL>
                             <_versionpolicy-impl>[$(version;==;$(@)),$(version;=+;$(@)))</_versionpolicy-impl>
                             <_versionpolicy-uses>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy-uses>
                             <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>

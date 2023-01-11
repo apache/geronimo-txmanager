@@ -32,7 +32,7 @@ import org.apache.geronimo.connector.mock.MockManagedConnectionFactory;
 /**
  * @version $Rev$ $Date$
  */
-public class AbstractSinglePoolTest extends TestCase {
+public abstract class AbstractSinglePoolTest extends TestCase {
 
     private ManagedConnectionFactory mcf = new MockManagedConnectionFactory();
     protected SwitchableInterceptor switchableInterceptor;

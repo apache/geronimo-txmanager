@@ -33,7 +33,7 @@
     <packaging>bundle</packaging>
     <description>Apache Geronimo Transaction Manager</description>
 
-    <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
+    <url>https://geronimo.apache.org/maven/${siteId}/${project.version}</url>
     <properties>
         <siteId>components/${project.artifactId}</siteId>
 
