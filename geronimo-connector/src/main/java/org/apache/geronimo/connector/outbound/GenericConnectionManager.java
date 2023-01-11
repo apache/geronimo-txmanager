@@ -28,8 +28,9 @@ import org.apache.geronimo.connector.outbound.connectionmanagerconfig.Transactio
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.XATransactions;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * GenericConnectionManager sets up a connection manager stack according to the
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class GenericConnectionManager extends AbstractConnectionManager {
-    protected static final Logger log = LoggerFactory.getLogger(GenericConnectionManager.class);
+    protected static final Logger log = Logger.getLogger(GenericConnectionManager.class.getName());
 
     //default constructor to support externalizable subclasses
     public GenericConnectionManager() {
@@ -128,8 +129,8 @@ public class GenericConnectionManager extends AbstractConnectionManager {
 
             stack = transactionSupport.addXAResourceInsertionInterceptor(stack, name);
             stack = pooling.addPoolingInterceptors(stack);
-            if (log.isTraceEnabled()) {
-                log.trace("Connection Manager " + name + " installed pool " + stack);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,"Connection Manager " + name + " installed pool " + stack);
             }
 
             this.poolingSupport = pooling;
@@ -155,10 +156,10 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             }
             tail.setStack(stack);
             this.stack = stack;
-            if (log.isDebugEnabled()) {
+            if (log.isLoggable(Level.FINE)) {
                 StringBuilder s = new StringBuilder("ConnectionManager Interceptor stack;\n");
                 stack.info(s);
-                log.debug(s.toString());
+                log.log(Level.FINE, s.toString());
             }
         }
 

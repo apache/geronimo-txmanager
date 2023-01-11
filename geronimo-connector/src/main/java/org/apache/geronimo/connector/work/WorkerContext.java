@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.NotSupportedException;
 import jakarta.resource.spi.work.ExecutionContext;
@@ -39,9 +41,6 @@ import jakarta.resource.spi.work.WorkListener;
 import jakarta.resource.spi.work.WorkManager;
 import jakarta.resource.spi.work.WorkRejectedException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Work wrapper providing an execution context to a Work instance.
  *
@@ -49,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WorkerContext implements Work {
 
-    private static final Logger log = LoggerFactory.getLogger(WorkerContext.class);
+    private static final Logger log = Logger.getLogger(WorkerContext.class.getName());
 
     private static final List<WorkContext> NO_INFLOW_CONTEXT = Collections.emptyList();
 
@@ -60,9 +59,9 @@ public class WorkerContext implements Work {
         public void workRejected(WorkEvent event) {
             if (event.getException() != null) {
                 if (event.getException() instanceof WorkCompletedException && event.getException().getCause() != null) {
-                    log.error(event.getWork().toString(), event.getException().getCause());
+                    log.log(Level.SEVERE, event.getWork().toString(), event.getException().getCause());
                 } else {
-                    log.error(event.getWork().toString(), event.getException());
+                    log.log(Level.SEVERE, event.getWork().toString(), event.getException());
                 }
             }
         }
@@ -256,8 +255,8 @@ public class WorkerContext implements Work {
         }
         boolean isTimeout = acceptedTime + startTimeOut > 0 &&
                 System.currentTimeMillis() > acceptedTime + startTimeOut;
-        if (log.isDebugEnabled()) {
-            log.debug(this
+        if (log.isLoggable(Level.FINE)) {
+            log.log(Level.FINE, this
                     + " accepted at "
                     + acceptedTime
                     + (isTimeout ? " has timed out." : " has not timed out. ")

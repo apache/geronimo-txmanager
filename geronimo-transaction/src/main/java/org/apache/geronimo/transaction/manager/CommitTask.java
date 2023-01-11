@@ -21,6 +21,8 @@
 package org.apache.geronimo.transaction.manager;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.transaction.Status;
 import jakarta.transaction.SystemException;
@@ -28,14 +30,12 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 import org.apache.geronimo.transaction.manager.TransactionImpl.ReturnableTransactionBranch;
 import org.apache.geronimo.transaction.manager.TransactionImpl.TransactionBranch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev$ $Date$
  */
 public class CommitTask implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(CommitTask.class);
+    private static final Logger log = Logger.getLogger(CommitTask.class.getName());
     private final Xid xid;
     private final List<TransactionBranch> rms;
     private final Object logMark;
@@ -65,7 +65,7 @@ public class CommitTask implements Runnable {
                     remove(index);
                     evercommit = true;
                 } catch (XAException e) {
-                    log.error("Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
+                    log.log(Level.SEVERE, "Unexpected exception committing " + manager.getCommitter() + "; continuing to commit other RMs", e);
 
                     if (e.errorCode == XAException.XA_HEURRB) {
                         remove(index);
@@ -135,7 +135,7 @@ public class CommitTask implements Runnable {
                     status = Status.STATUS_COMMITTED;
                 }
             } catch (LogException e) {
-                log.error("Unexpected exception logging commit completion for xid " + xid, e);
+                log.log(Level.SEVERE, "Unexpected exception logging commit completion for xid " + xid, e);
                 cause = (XAException) new XAException("Unexpected error logging commit completion for xid " + xid).initCause(e);
             }
         } else {

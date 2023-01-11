@@ -19,6 +19,7 @@ package org.apache.geronimo.connector.outbound;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.security.auth.Subject;
 import jakarta.transaction.UserTransaction;
@@ -39,8 +40,6 @@ import org.apache.geronimo.connector.outbound.connectiontracking.DefaultIntercep
 import org.apache.geronimo.connector.outbound.connectiontracking.GeronimoTransactionListener;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
 import org.apache.geronimo.transaction.manager.TransactionManagerImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import junit.framework.TestCase;
 
 /**
@@ -49,7 +48,7 @@ import junit.framework.TestCase;
  * @version $Rev$ $Date$
  */
 public class ConnectionManagerTestUtils extends TestCase implements DefaultInterceptor {
-    protected static final Logger log = LoggerFactory.getLogger(ConnectionManagerTestUtils.class);
+    protected static final Logger log = Logger.getLogger(ConnectionManagerTestUtils.class.getName());
     
     protected boolean useTransactionCaching = true;
     protected boolean useLocalTransactions = false;

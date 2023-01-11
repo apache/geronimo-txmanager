@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.spi.ConnectionEvent;
 import jakarta.resource.spi.ConnectionEventListener;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * ConnectionEventListener.java
@@ -39,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GeronimoConnectionEventListener implements ConnectionEventListener {
 
-    private static Logger log = LoggerFactory.getLogger(GeronimoConnectionEventListener.class.getName());
+    private static Logger log = Logger.getLogger(GeronimoConnectionEventListener.class.getName());
 
     private final ManagedConnectionInfo managedConnectionInfo;
     private final ConnectionInterceptor stack;
@@ -61,16 +59,16 @@ public class GeronimoConnectionEventListener implements ConnectionEventListener 
                     + ", actual "
                     + connectionEvent.getSource());
         }
-        if (log.isTraceEnabled()) {
-            log.trace("connectionClosed called with " + connectionEvent.getConnectionHandle() + " for MCI: " + managedConnectionInfo + " and MC: " + managedConnectionInfo.getManagedConnection());
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,"connectionClosed called with " + connectionEvent.getConnectionHandle() + " for MCI: " + managedConnectionInfo + " and MC: " + managedConnectionInfo.getManagedConnection());
         }
         ConnectionInfo ci = new ConnectionInfo(managedConnectionInfo);
         ci.setConnectionHandle(connectionEvent.getConnectionHandle());
         try {
             stack.returnConnection(ci, ConnectionReturnAction.RETURN_HANDLE);
         } catch (Throwable e) {
-            if (log.isTraceEnabled()) {
-                log.trace("connectionClosed failed with " + connectionEvent.getConnectionHandle() + " for MCI: " + managedConnectionInfo + " and MC: " + managedConnectionInfo.getManagedConnection(), e);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,"connectionClosed failed with " + connectionEvent.getConnectionHandle() + " for MCI: " + managedConnectionInfo + " and MC: " + managedConnectionInfo.getManagedConnection(), e);
             }
             if (e instanceof Error) {
                 throw (Error)e;
@@ -86,7 +84,7 @@ public class GeronimoConnectionEventListener implements ConnectionEventListener 
                     + ", actual "
                     + connectionEvent.getSource());
         }
-        log.warn("connectionErrorOccurred called with " + connectionEvent.getConnectionHandle(), connectionEvent.getException());
+        log.log(Level.WARNING,"connectionErrorOccurred called with " + connectionEvent.getConnectionHandle(), connectionEvent.getException());
         boolean errorOccurred = this.errorOccurred;
         this.errorOccurred = true;
         if (!errorOccurred) {

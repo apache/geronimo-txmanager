@@ -18,6 +18,7 @@
 package org.apache.geronimo.connector.outbound;
 
 import java.util.HashSet;
+import java.util.logging.Level;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectorInstanceContextImpl;
 
@@ -70,14 +71,14 @@ public class ConnectionManagerStressTest extends ConnectionManagerTestUtils {
                                 long duration = System.currentTimeMillis() - start;
                                 if (duration > 100) {
                                     localSlowCount++;
-                                    log.debug("got a cx: " + i + ", time: " + (duration));
+                                    log.log(Level.FINE, "got a cx: " + i + ", time: " + (duration));
                                 }
                             } catch (Throwable throwable) {
-                                log.debug(throwable.getMessage(), throwable);
+                                log.log(Level.FINE, throwable.getMessage(), throwable);
                             }
                         }
                     } catch (Exception e) {
-                        log.info(e.getMessage(), e);
+                        log.log(Level.INFO, e.getMessage(), e);
                         ConnectionManagerStressTest.this.e = e;
                     } finally {
                         synchronized (stopBarrier) {
@@ -107,7 +108,7 @@ public class ConnectionManagerStressTest extends ConnectionManagerTestUtils {
             while (stoppedThreads < threadCount) stopBarrier.wait();
         }
         long duration = System.currentTimeMillis() - startTime;
-        log.debug("no tx run, thread count: " + threadCount + ", connection count: " + repeatCount + ", duration: " + duration + ", total duration: " + totalDuration + ", ms per cx request: " + (totalDuration / (threadCount * repeatCount)) + ", slow cx request count: " + slowCount);
+        log.log(Level.FINE, "no tx run, thread count: " + threadCount + ", connection count: " + repeatCount + ", duration: " + duration + ", total duration: " + totalDuration + ", ms per cx request: " + (totalDuration / (threadCount * repeatCount)) + ", slow cx request count: " + slowCount);
         //return startTime;
         if (e != null) {
             throw e;

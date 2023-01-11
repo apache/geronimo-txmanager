@@ -25,6 +25,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.spi.work.ExecutionContext;
 import jakarta.resource.spi.work.Work;
@@ -35,8 +37,6 @@ import jakarta.resource.spi.work.WorkListener;
 import junit.framework.TestCase;
 import org.apache.geronimo.transaction.manager.GeronimoTransactionManager;
 import org.apache.geronimo.transaction.manager.XAWork;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Timing is crucial for this test case, which focuses on the synchronization
@@ -253,7 +253,7 @@ public class PooledWorkManagerTest extends TestCase {
     }
 
     public static class DummyWork implements Work {
-        private Logger log = LoggerFactory.getLogger(getClass());
+        private Logger log = Logger.getLogger(getClass().getName());
 
         private final String name;
         private final int tempo;
@@ -270,7 +270,7 @@ public class PooledWorkManagerTest extends TestCase {
             try {
                 Thread.sleep(tempo);
             } catch (InterruptedException e) {
-                log.debug(e.getMessage(), e);
+                log.log(Level.FINE, e.getMessage(), e);
             }
         }
 
@@ -280,7 +280,7 @@ public class PooledWorkManagerTest extends TestCase {
     }
 
     public static class DummyWorkListener implements WorkListener {
-        private Logger log = LoggerFactory.getLogger(getClass());
+        private Logger log = Logger.getLogger(getClass().getName());
 
         public WorkEvent acceptedEvent;
         public WorkEvent rejectedEvent;
@@ -289,22 +289,22 @@ public class PooledWorkManagerTest extends TestCase {
 
         public void workAccepted(WorkEvent e) {
             acceptedEvent = e;
-            log.debug("accepted: " + e);
+            log.log(Level.FINE, "accepted: " + e);
         }
 
         public void workRejected(WorkEvent e) {
             rejectedEvent = e;
-            log.debug("rejected: " + e);
+            log.log(Level.FINE,"rejected: " + e);
         }
 
         public void workStarted(WorkEvent e) {
             startedEvent = e;
-            log.debug("started: " + e);
+            log.log(Level.FINE,"started: " + e);
         }
 
         public void workCompleted(WorkEvent e) {
             completedEvent = e;
-            log.debug("completed: " + e);
+            log.log(Level.FINE,"completed: " + e);
         }
     }
 }

@@ -25,6 +25,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.transaction.HeuristicMixedException;
 import jakarta.transaction.HeuristicRollbackException;
@@ -36,8 +38,6 @@ import jakarta.transaction.Transaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class TransactionImpl implements Transaction {
-    private static final Logger log = LoggerFactory.getLogger("Transaction");
+    private static final Logger log = Logger.getLogger("Transaction");
 
     private final TransactionManagerImpl txManager;
     private final Xid xid;
@@ -195,7 +195,7 @@ public class TransactionImpl implements Transaction {
                 try {
                     sameRM = xaRes.isSameRM(manager.getCommitter());
                 } catch (XAException e) {
-                    log.warn("Unexpected error checking for same RM", e);
+                    log.log(Level.WARNING, "Unexpected error checking for same RM", e);
                     continue;
                 }
                 if (sameRM) {
@@ -212,7 +212,7 @@ public class TransactionImpl implements Transaction {
             activeXaResources.put(xaRes, addBranchXid(xaRes, branchId));
             return true;
         } catch (XAException e) {
-            log.warn("Unable to enlist XAResource " + xaRes + ", errorCode: " + e.errorCode, e);
+            log.log(Level.WARNING, "Unable to enlist XAResource " + xaRes + ", errorCode: " + e.errorCode, e);
             // mark status as rollback only because enlist resource failed
             setRollbackOnly(e);
             return false;
@@ -252,7 +252,7 @@ public class TransactionImpl implements Transaction {
             }
             return true;
         } catch (XAException e) {
-            log.warn("Unable to delist XAResource " + xaRes + ", error code: " + e.errorCode, e);
+            log.log(Level.WARNING, "Unable to delist XAResource " + xaRes + ", error code: " + e.errorCode, e);
             return false;
         }
     }
@@ -469,7 +469,7 @@ public class TransactionImpl implements Transaction {
                 try {
                     rollbackResources(resourceManagers, false);
                 } catch (Exception se) {
-                    log.error("Unable to rollback after failure to log prepare", se.getCause());
+                    log.log(Level.SEVERE, "Unable to rollback after failure to log prepare", se.getCause());
                 }
                 throw (SystemException) new SystemException("Error logging prepare; transaction was rolled back)").initCause(e);
             }
@@ -526,7 +526,7 @@ public class TransactionImpl implements Transaction {
             try {
                 synch.beforeCompletion();
             } catch (Exception e) {
-                log.warn("Unexpected exception from beforeCompletion; transaction will roll back", e);
+                log.log(Level.WARNING,"Unexpected exception from beforeCompletion; transaction will roll back", e);
                 synchronized (this) {
                     markRollbackCause(e);
                     status = Status.STATUS_MARKED_ROLLBACK;
@@ -558,7 +558,7 @@ public class TransactionImpl implements Transaction {
             try {
                 synch.afterCompletion(status);
             } catch (Exception e) {
-                log.warn("Unexpected exception from afterCompletion; continuing", e);
+                log.log(Level.WARNING,"Unexpected exception from afterCompletion; continuing", e);
             }
         }
     }
@@ -587,7 +587,7 @@ public class TransactionImpl implements Transaction {
             try {
                 xaRes.end(manager.getBranchId(), flags);
             } catch (XAException e) {
-                log.warn("Error ending association for XAResource " + xaRes + "; transaction will roll back. XA error code: " + e.errorCode, e);
+                log.log(Level.WARNING,"Error ending association for XAResource " + xaRes + "; transaction will roll back. XA error code: " + e.errorCode, e);
                 synchronized (this) {
                     markRollbackCause(e);
                     status = Status.STATUS_MARKED_ROLLBACK;
@@ -778,7 +778,7 @@ public class TransactionImpl implements Transaction {
             } else {
                 // if it isn't a named resource should we really stop all processing here!
                 // Maybe this would be better to handle else where and do we really want to prevent all processing of transactions?
-                log.error("Please correct the integration and supply a NamedXAResource", new IllegalStateException("Cannot log transactions as " + committer + " is not a NamedXAResource."));
+                log.log(Level.SEVERE, "Please correct the integration and supply a NamedXAResource", new IllegalStateException("Cannot log transactions as " + committer + " is not a NamedXAResource."));
                 return committer.toString();
             }
         }

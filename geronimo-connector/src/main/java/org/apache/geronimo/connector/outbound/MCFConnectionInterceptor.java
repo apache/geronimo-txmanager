@@ -20,9 +20,8 @@ package org.apache.geronimo.connector.outbound;
 import jakarta.resource.ResourceException;
 import jakarta.resource.spi.ManagedConnection;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * MCFConnectionInterceptor.java
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MCFConnectionInterceptor implements ConnectionInterceptor {
 
-    protected static final Logger log = LoggerFactory.getLogger(MCFConnectionInterceptor.class.getName());
+    protected static final Logger log = Logger.getLogger(MCFConnectionInterceptor.class.getName());
 
     private ConnectionInterceptor stack;
 
@@ -53,7 +52,7 @@ public class MCFConnectionInterceptor implements ConnectionInterceptor {
             mci.setConnectionEventListener(listener);
             mc.addConnectionEventListener(listener);
         } catch (ResourceException re) {
-            log.error("Error occurred creating ManagedConnection for " + connectionInfo, re);
+            log.log(Level.SEVERE, "Error occurred creating ManagedConnection for " + connectionInfo, re);
             throw re;
         }
     }

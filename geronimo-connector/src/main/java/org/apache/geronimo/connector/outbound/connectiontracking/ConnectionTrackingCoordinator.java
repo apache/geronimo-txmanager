@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.ResourceException;
 import jakarta.resource.spi.DissociatableManagedConnection;
@@ -36,8 +38,6 @@ import org.apache.geronimo.connector.outbound.ConnectionInfo;
 import org.apache.geronimo.connector.outbound.ConnectionReturnAction;
 import org.apache.geronimo.connector.outbound.ConnectionTrackingInterceptor;
 import org.apache.geronimo.connector.outbound.ManagedConnectionInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ConnectionTrackingCoordinator tracks connections that are in use by
@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class ConnectionTrackingCoordinator implements TrackedConnectionAssociator, ConnectionTracker {
-    private static final Logger log = LoggerFactory.getLogger(ConnectionTrackingCoordinator.class.getName());
+    private static final Logger log = Logger.getLogger(ConnectionTrackingCoordinator.class.getName());
 
     private final boolean lazyConnect;
     private final ThreadLocal<ConnectorInstanceContext> currentInstanceContexts = new ThreadLocal<ConnectorInstanceContext>();
@@ -191,8 +191,8 @@ public class ConnectionTrackingCoordinator implements TrackedConnectionAssociato
                 infos.remove(connectionInfo);
             }
         } else {
-            if ( log.isTraceEnabled()) {
-                 log.trace("No infos found for handle " + connectionInfo.getConnectionHandle() +
+            if ( log.isLoggable(Level.FINEST)) {
+                 log.log(Level.FINEST,"No infos found for handle " + connectionInfo.getConnectionHandle() +
                          " for MCI: " + connectionInfo.getManagedConnectionInfo() +
                          " for MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() +
                          " for CTI: " + connectionTrackingInterceptor, new Exception("Stack Trace"));

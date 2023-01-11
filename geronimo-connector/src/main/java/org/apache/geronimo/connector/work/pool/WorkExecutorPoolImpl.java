@@ -20,10 +20,8 @@ package org.apache.geronimo.connector.work.pool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Based class for WorkExecutorPool. Sub-classes define the synchronization
@@ -38,7 +36,7 @@ public class WorkExecutorPoolImpl implements WorkExecutorPool {
      * A timed out pooled executor.
      */
     private ThreadPoolExecutor pooledExecutor;
-    private static Logger log = LoggerFactory.getLogger(WorkExecutorPoolImpl.class);
+    private static Logger log = Logger.getLogger(WorkExecutorPoolImpl.class.getName());
 
     /**
      * Creates a pool with the specified minimum and maximum sizes. The Channel
@@ -62,7 +60,7 @@ public class WorkExecutorPoolImpl implements WorkExecutorPool {
      */
     public void execute(Runnable work) {
         if(pooledExecutor.getPoolSize() == pooledExecutor.getMaximumPoolSize()) {
-            log.warn("Maximum Pool size has been exceeded.  Current Pool Size = "+pooledExecutor.getMaximumPoolSize());
+            log.log(Level.WARNING, "Maximum Pool size has been exceeded.  Current Pool Size = "+pooledExecutor.getMaximumPoolSize());
         }
 
         pooledExecutor.execute(work);

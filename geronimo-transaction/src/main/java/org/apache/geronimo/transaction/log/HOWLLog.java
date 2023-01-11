@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.transaction.xa.Xid;
 
 import org.apache.geronimo.transaction.manager.LogException;
@@ -42,8 +44,6 @@ import org.objectweb.howl.log.ReplayListener;
 import org.objectweb.howl.log.xa.XACommittingTx;
 import org.objectweb.howl.log.xa.XALogRecord;
 import org.objectweb.howl.log.xa.XALogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev$ $Date$
@@ -56,7 +56,7 @@ public class HOWLLog implements TransactionLog {
 
     static final String[] TYPE_NAMES = {null, "PREPARE", "COMMIT", "ROLLBACK"};
 
-    private static final Logger log = LoggerFactory.getLogger(HOWLLog.class);
+    private static final Logger log = Logger.getLogger(HOWLLog.class.getName());
 
     private File serverBaseDir;
     private String logFileDir;
@@ -252,7 +252,7 @@ public class HOWLLog implements TransactionLog {
     public void doStart() throws Exception {
         started = true;
         setLogFileDir(logFileDir);
-        log.debug("Initiating transaction manager recovery");
+        log.log(Level.FINE, "Initiating transaction manager recovery");
         recovered = new HashMap<Xid, Recovery.XidBranchesPair>();
 
         logger.open(null);
@@ -260,7 +260,7 @@ public class HOWLLog implements TransactionLog {
         ReplayListener replayListener = new GeronimoReplayListener(xidFactory, recovered);
         logger.replayActiveTx(replayListener);
 
-        log.debug("In doubt transactions recovered from log");
+        log.log(Level.FINE, "In doubt transactions recovered from log");
     }
 
     public void doStop() throws Exception {
@@ -349,11 +349,11 @@ public class HOWLLog implements TransactionLog {
     }
 
     public Collection<Recovery.XidBranchesPair> recover(XidFactory xidFactory) throws LogException {
-        log.debug("Initiating transaction manager recovery");
+        log.log(Level.FINE, "Initiating transaction manager recovery");
         Map<Xid, Recovery.XidBranchesPair> recovered = new HashMap<Xid, Recovery.XidBranchesPair>();
         ReplayListener replayListener = new GeronimoReplayListener(xidFactory, recovered);
         logger.replayActiveTx(replayListener);
-        log.debug("In doubt transactions recovered from log");
+        log.log(Level.FINE, "In doubt transactions recovered from log");
         return recovered.values();
     }
 
@@ -408,7 +408,7 @@ public class HOWLLog implements TransactionLog {
 
                 Recovery.XidBranchesPair xidBranchesPair = new Recovery.XidBranchesPair(masterXid, tx);
                 recoveredTx.put(masterXid, xidBranchesPair);
-                log.debug("recovered prepare record for master xid: " + masterXid);
+                log.log(Level.FINE, "recovered prepare record for master xid: " + masterXid);
                 for (int i = 3; i < data.length; i += 2) {
                     byte[] branchBranchId = data[i];
                     String name = new String(data[i + 1]);
@@ -416,17 +416,17 @@ public class HOWLLog implements TransactionLog {
                     Xid branchXid = xidFactory.recover(formatId, globalId, branchBranchId);
                     TransactionBranchInfoImpl branchInfo = new TransactionBranchInfoImpl(branchXid, name);
                     xidBranchesPair.addBranch(branchInfo);
-                    log.debug("recovered branch for resource manager, branchId " + name + ", " + branchXid);
+                    log.log(Level.FINE, "recovered branch for resource manager, branchId " + name + ", " + branchXid);
                 }
             } else {
                 if(recordType != LogRecordType.END_OF_LOG) { // This value crops up every time the server is started
-                    log.warn("Received unexpected log record: " + lr +" ("+recordType+")");
+                    log.log(Level.WARNING, "Received unexpected log record: " + lr +" ("+recordType+")");
                 }
             }
         }
 
         public void onError(org.objectweb.howl.log.LogException exception) {
-            log.error("Error during recovery: ", exception);
+            log.log(Level.SEVERE, "Error during recovery: ", exception);
         }
 
         public LogRecord getLogRecord() {

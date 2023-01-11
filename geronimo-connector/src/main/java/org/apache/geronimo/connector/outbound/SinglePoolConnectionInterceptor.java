@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.ResourceException;
 import jakarta.resource.spi.ManagedConnection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * SinglePoolConnectionInterceptor chooses a single connection from the pool.  If selectOneAssumeMatch
@@ -41,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectionInterceptor {
-    private static final Logger log = LoggerFactory.getLogger(SinglePoolConnectionInterceptor.class.getName());
+    private static final Logger log = Logger.getLogger(SinglePoolConnectionInterceptor.class.getName());
 
     private boolean selectOneAssumeMatch;
 
@@ -69,8 +67,8 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             if (pool.isEmpty()) {
                 next.getConnection(connectionInfo);
                 connectionCount++;
-                if (log.isTraceEnabled()) {
-                    log.trace("Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
+                if (log.isLoggable(Level.FINEST)) {
+                    log.log(Level.FINEST,"Supplying new connection MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
                 }
                 return;
             } else {
@@ -81,8 +79,8 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             }
             if (selectOneAssumeMatch) {
                 connectionInfo.setManagedConnectionInfo(newMCI);
-                if (log.isTraceEnabled()) {
-                    log.trace("Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
+                if (log.isLoggable(Level.FINEST)) {
+                    log.log(Level.FINEST,"Supplying pooled connection without checking matching MCI: " + connectionInfo.getManagedConnectionInfo() + " MC: " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " from pool: " + this);
                 }
                 return;
             }
@@ -101,8 +99,8 @@ public class SinglePoolConnectionInterceptor extends AbstractSinglePoolConnectio
             }
             if (matchedMC != null) {
                 connectionInfo.setManagedConnectionInfo(newMCI);
-                if (log.isTraceEnabled()) {
-                    log.trace("Supplying pooled connection  MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
+                if (log.isLoggable(Level.FINEST)) {
+                    log.log(Level.FINEST,"Supplying pooled connection  MCI: " + connectionInfo.getManagedConnectionInfo() + " from pool: " + this);
                 }
             } else {
                 //matching failed.

@@ -20,14 +20,15 @@ import jakarta.resource.ResourceException;
 import jakarta.transaction.Transaction;
 
 import org.apache.geronimo.transaction.manager.TransactionManagerMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @version $Rev$ $Date$
  */
 public class GeronimoTransactionListener implements TransactionManagerMonitor {
-    private static final Logger log = LoggerFactory.getLogger(GeronimoTransactionListener.class);
+    private static final Logger log = Logger.getLogger(GeronimoTransactionListener.class.getName());
     private final TrackedConnectionAssociator trackedConnectionAssociator;
 
     public GeronimoTransactionListener(TrackedConnectionAssociator trackedConnectionAssociator) {
@@ -38,7 +39,7 @@ public class GeronimoTransactionListener implements TransactionManagerMonitor {
         try {
             trackedConnectionAssociator.newTransaction();
         } catch (ResourceException e) {
-            log.warn("Error notifying connection tranker of transaction association", e);
+            log.log(Level.WARNING, "Error notifying connection tranker of transaction association", e);
         }
     }
 

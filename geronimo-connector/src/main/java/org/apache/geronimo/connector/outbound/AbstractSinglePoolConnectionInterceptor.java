@@ -24,6 +24,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.resource.ResourceException;
 import jakarta.resource.spi.ConnectionRequestInfo;
@@ -31,14 +33,11 @@ import jakarta.resource.spi.ManagedConnection;
 import jakarta.resource.spi.ManagedConnectionFactory;
 import javax.security.auth.Subject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @version $Rev$ $Date$
  */
 public abstract class AbstractSinglePoolConnectionInterceptor implements ConnectionInterceptor, PoolingAttributes {
-    protected static Logger log = LoggerFactory.getLogger(AbstractSinglePoolConnectionInterceptor.class);
+    protected static Logger log = Logger.getLogger(AbstractSinglePoolConnectionInterceptor.class.getName());
     protected final ConnectionInterceptor next;
     private final ReadWriteLock resizeLock = new ReentrantReadWriteLock();
     protected Semaphore permits;
@@ -67,8 +66,8 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
 
     public void getConnection(ConnectionInfo connectionInfo) throws ResourceException {
         if (connectionInfo.getManagedConnectionInfo().getManagedConnection() != null) {
-            if (log.isTraceEnabled()) {
-                log.trace("supplying already assigned connection from pool " + this + " " + connectionInfo);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,"supplying already assigned connection from pool " + this + " " + connectionInfo);
             }
             return;
         }
@@ -102,8 +101,8 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
 
     public void returnConnection(ConnectionInfo connectionInfo,
                                  ConnectionReturnAction connectionReturnAction) {
-        if (log.isTraceEnabled()) {
-            log.trace("returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this);
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,"returning connection " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this);
         }
 
         // not strictly synchronized with destroy(), but pooled operations in internalReturn() are...
@@ -120,8 +119,8 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
         try {
             ManagedConnectionInfo mci = connectionInfo.getManagedConnectionInfo();
             if (connectionReturnAction == ConnectionReturnAction.RETURN_HANDLE && mci.hasConnectionHandles()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
+                if (log.isLoggable(Level.FINEST)) {
+                    log.log(Level.FINEST,"Return request at pool with connection handles! " + connectionInfo.getConnectionHandle() + " for MCI " + connectionInfo.getManagedConnectionInfo() + " and MC " + connectionInfo.getManagedConnectionInfo().getManagedConnection() + " to pool " + this, new Exception("Stack trace"));
                 }
                 return;
             }
@@ -179,8 +178,8 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
             }
         }
         //we must destroy connection.
-        if (log.isTraceEnabled()) {
-            log.trace("Discarding connection in pool " + this + " " + connectionInfo);
+        if (log.isLoggable(Level.FINEST)) {
+            log.log(Level.FINEST,"Discarding connection in pool " + this + " " + connectionInfo);
         }
         next.returnConnection(connectionInfo, connectionReturnAction);
         connectionCount--;
@@ -378,7 +377,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
                     parent.next.returnConnection(killInfo, ConnectionReturnAction.DESTROY);
                 }
             } catch (Throwable t) {
-                log.error("Error occurred during execution of ExpirationMonitor TimerTask", t);
+                log.log(Level.SEVERE, "Error occurred during execution of ExpirationMonitor TimerTask", t);
             } finally {
                 interceptor.resizeLock.readLock().unlock();
             }
@@ -418,7 +417,7 @@ public abstract class AbstractSinglePoolConnectionInterceptor implements Connect
                     }
                 }
             } catch (Throwable t) {
-                log.error("FillTask encountered error in run method", t);
+                log.log(Level.SEVERE, "FillTask encountered error in run method", t);
             } finally {
                 resizeLock.readLock().unlock();
             }
