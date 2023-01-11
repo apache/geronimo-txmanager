@@ -19,7 +19,7 @@ package org.apache.geronimo.connector.outbound.connectionmanagerconfig;
 
 import java.io.Serializable;
 
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.outbound.ConnectionInterceptor;
 

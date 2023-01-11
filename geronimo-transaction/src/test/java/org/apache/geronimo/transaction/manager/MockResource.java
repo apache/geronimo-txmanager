@@ -20,7 +20,7 @@ package org.apache.geronimo.transaction.manager;
 import java.util.Set;
 import java.util.HashSet;
 
-import javax.transaction.SystemException;
+import jakarta.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;

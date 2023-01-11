@@ -18,11 +18,11 @@ package org.apache.geronimo.connector;
 
 import java.util.Timer;
 
-import javax.resource.spi.UnavailableException;
-import javax.resource.spi.XATerminator;
-import javax.resource.spi.work.WorkManager;
-import javax.resource.spi.work.WorkContext;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.resource.spi.UnavailableException;
+import jakarta.resource.spi.XATerminator;
+import jakarta.resource.spi.work.WorkManager;
+import jakarta.resource.spi.work.WorkContext;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import org.apache.geronimo.connector.work.GeronimoWorkManager;
 
 /**
@@ -31,7 +31,7 @@ import org.apache.geronimo.connector.work.GeronimoWorkManager;
  *
  * @version $Rev$ $Date$
  */
-public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapContext {
+public class GeronimoBootstrapContext implements jakarta.resource.spi.BootstrapContext {
     private final GeronimoWorkManager workManager;
     private final XATerminator xATerminator;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
@@ -59,21 +59,21 @@ public class GeronimoBootstrapContext implements javax.resource.spi.BootstrapCon
 
 
     /**
-     * @see javax.resource.spi.BootstrapContext#getWorkManager()
+     * @see jakarta.resource.spi.BootstrapContext#getWorkManager()
      */
     public WorkManager getWorkManager() {
         return workManager;
     }
 
     /**
-     * @see javax.resource.spi.BootstrapContext#getXATerminator()
+     * @see jakarta.resource.spi.BootstrapContext#getXATerminator()
      */
     public XATerminator getXATerminator() {
         return xATerminator;
     }
 
     /**
-     * @see javax.resource.spi.BootstrapContext#createTimer()
+     * @see jakarta.resource.spi.BootstrapContext#createTimer()
      */
     public Timer createTimer() throws UnavailableException {
         return new Timer("BootStrapTimer", true);

@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 

@@ -17,8 +17,8 @@
 
 package org.apache.geronimo.connector.mock;
 
-import javax.resource.ResourceException;
-import javax.resource.cci.LocalTransaction;
+import jakarta.resource.ResourceException;
+import jakarta.resource.cci.LocalTransaction;
 
 /**
  *

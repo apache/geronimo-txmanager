@@ -19,8 +19,8 @@ package org.apache.geronimo.transaction.manager;
 
 import javax.transaction.xa.Xid;
 import javax.transaction.xa.XAException;
-import javax.transaction.SystemException;
-import javax.transaction.InvalidTransactionException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.InvalidTransactionException;
 
 import org.apache.geronimo.transaction.manager.ImportedTransactionActiveException;
 

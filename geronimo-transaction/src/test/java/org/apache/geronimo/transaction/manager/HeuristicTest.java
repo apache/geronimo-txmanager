@@ -20,8 +20,8 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicRollbackException;
 import javax.transaction.xa.XAException;
 import junit.framework.TestCase;
 

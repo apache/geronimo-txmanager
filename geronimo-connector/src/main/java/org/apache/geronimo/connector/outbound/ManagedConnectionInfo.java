@@ -19,9 +19,9 @@ package org.apache.geronimo.connector.outbound;
 
 import java.util.Collection;
 
-import javax.resource.spi.ConnectionRequestInfo;
-import javax.resource.spi.ManagedConnection;
-import javax.resource.spi.ManagedConnectionFactory;
+import jakarta.resource.spi.ConnectionRequestInfo;
+import jakarta.resource.spi.ManagedConnection;
+import jakarta.resource.spi.ManagedConnectionFactory;
 import javax.security.auth.Subject;
 import javax.transaction.xa.XAResource;
 

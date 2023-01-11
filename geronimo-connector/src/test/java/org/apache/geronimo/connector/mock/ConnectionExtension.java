@@ -16,7 +16,7 @@
  */
 package org.apache.geronimo.connector.mock;
 
-import javax.resource.cci.Connection;
+import jakarta.resource.cci.Connection;
 import javax.security.auth.Subject;
 
 /**

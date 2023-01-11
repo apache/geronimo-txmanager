@@ -26,8 +26,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.resource.spi.XATerminator;
-import javax.resource.spi.work.WorkManager;
+import jakarta.resource.spi.XATerminator;
+import jakarta.resource.spi.work.WorkManager;
 
 import junit.framework.TestCase;
 import org.apache.geronimo.connector.work.GeronimoWorkManager;

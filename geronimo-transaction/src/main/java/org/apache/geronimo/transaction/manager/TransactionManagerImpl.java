@@ -22,27 +22,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
-import javax.transaction.UserTransaction;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicRollbackException;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.transaction.NotSupportedException;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.UserTransaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.geronimo.transaction.log.UnrecoverableLog;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Simple implementation of a transaction manager.
@@ -50,8 +51,8 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class TransactionManagerImpl implements TransactionManager, UserTransaction, TransactionSynchronizationRegistry, XidImporter, MonitorableTransactionManager, RecoverableTransactionManager {
-    private static final Logger log = LoggerFactory.getLogger(TransactionManagerImpl.class);
-    private static final Logger recoveryLog = LoggerFactory.getLogger("RecoveryController");
+    private static final Logger log = Logger.getLogger(TransactionManagerImpl.class.getName());
+    private static final Logger recoveryLog = Logger.getLogger("RecoveryController");
 
     protected static final int DEFAULT_TIMEOUT = 600;
     protected static final byte[] DEFAULT_TM_ID = new byte[] {71,84,77,73,68};
@@ -355,7 +356,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
 
     //Recovery
     public void recoveryError(Exception e) {
-        recoveryLog.error("Recovery error: {}", e.getMessage());
+        recoveryLog.log(Level.SEVERE, "Recovery error: {}", e.getMessage());
         recoveryErrors.add(e);
     }
 
@@ -401,7 +402,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             try {
                 listener.threadAssociated(tx);
             } catch (Exception e) {
-                log.warn("Error calling transaction association listener", e);
+                log.log(Level.WARNING, "Error calling transaction association listener", e);
             }
         }
     }
@@ -411,7 +412,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             try {
                 listener.threadUnassociated(tx);
             } catch (Exception e) {
-                log.warn("Error calling transaction association listener", e);
+                log.log(Level.WARNING, "Error calling transaction association listener", e);
             }
         }
     }

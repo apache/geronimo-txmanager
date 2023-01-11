@@ -20,8 +20,8 @@ package org.apache.geronimo.transaction.manager;
 import javax.transaction.xa.Xid;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.XAException;
-import javax.transaction.Transaction;
-import javax.transaction.Status;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.Status;
 
 import junit.framework.TestCase;
 

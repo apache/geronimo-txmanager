@@ -22,10 +22,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnection;
-import javax.resource.spi.ManagedConnectionFactory;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnection;
+import jakarta.resource.spi.ManagedConnectionFactory;
 
 /**
  * This pool is the most spec-compliant pool.  It can be used by itself with no partitioning.
@@ -66,8 +67,8 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
                 if (matchedMC != null) {
                     connectionInfo.setManagedConnectionInfo(pool.get(matchedMC));
                     pool.remove(matchedMC);
-                    if (log.isTraceEnabled()) {
-                        log.trace("Supplying existing connection from pool " + this + " " + connectionInfo);
+                    if (log.isLoggable(Level.FINEST)) {
+                        log.log(Level.FINEST,"Supplying existing connection from pool " + this + " " + connectionInfo);
                     }
                     if (connectionCount < minSize) {
                         timer.schedule(new FillTask(connectionInfo), 10);
@@ -78,7 +79,7 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             //matching failed or pool is empty
             //if pool is at maximum size, pick a cx to kill
             if (connectionCount == maxSize) {
-                log.trace("Pool is at max size but no connections match, picking one to destroy");
+                log.log(Level.FINEST,"Pool is at max size but no connections match, picking one to destroy");
                 Iterator iterator = pool.entrySet().iterator();
                 ManagedConnectionInfo kill = (ManagedConnectionInfo) ((Map.Entry) iterator.next()).getValue();
                 iterator.remove();
@@ -87,8 +88,8 @@ public class SinglePoolMatchAllConnectionInterceptor extends AbstractSinglePoolC
             }
             next.getConnection(connectionInfo);
             connectionCount++;
-            if (log.isTraceEnabled()) {
-                log.trace("Supplying new connection from pool " + this + " " + connectionInfo);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,"Supplying new connection from pool " + this + " " + connectionInfo);
             }
             if (connectionCount < minSize) {
                 timer.schedule(new FillTask(connectionInfo), 10);

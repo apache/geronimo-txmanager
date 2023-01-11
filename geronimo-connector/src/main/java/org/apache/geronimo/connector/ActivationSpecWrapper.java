@@ -19,15 +19,15 @@ package org.apache.geronimo.connector;
 
 import java.util.Set; 
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ActivationSpec;
-import javax.resource.spi.ResourceAdapter;
-import javax.resource.spi.InvalidPropertyException; 
-import javax.resource.spi.endpoint.MessageEndpointFactory;
-import javax.validation.ConstraintViolation; 
-import javax.validation.ConstraintViolationException; 
-import javax.validation.Validator; 
-import javax.validation.ValidatorFactory; 
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ActivationSpec;
+import jakarta.resource.spi.ResourceAdapter;
+import jakarta.resource.spi.InvalidPropertyException; 
+import jakarta.resource.spi.endpoint.MessageEndpointFactory;
+import jakarta.validation.ConstraintViolation; 
+import jakarta.validation.ConstraintViolationException; 
+import jakarta.validation.Validator; 
+import jakarta.validation.ValidatorFactory; 
 
 /**
  * Wrapper for ActivationSpec instances.

@@ -27,17 +27,15 @@ import java.util.Collections;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.SystemException;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicRollbackException;
+import jakarta.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  *
@@ -46,7 +44,7 @@ import org.slf4j.LoggerFactory;
  *
  * */
 public class RecoveryImpl implements Recovery {
-    private static final Logger log = LoggerFactory.getLogger("Recovery");
+    private static final Logger log = Logger.getLogger("Recovery");
 
 
     private final TransactionManagerImpl txManager;
@@ -71,11 +69,11 @@ public class RecoveryImpl implements Recovery {
         }
         for (XidBranchesPair xidBranchesPair : preparedXids) {
             Xid xid = xidBranchesPair.getXid();
-            log.trace("read prepared global xid from log: " + toString(xid));
+            log.log(Level.FINEST,"read prepared global xid from log: " + toString(xid));
             if (txManager.getXidFactory().matchesGlobalId(xid.getGlobalTransactionId())) {
                 ourXids.put(new ByteArrayWrapper(xid.getGlobalTransactionId()), xidBranchesPair);
                 for (TransactionBranchInfo transactionBranchInfo : xidBranchesPair.getBranches()) {
-                    log.trace("read branch from log: " + transactionBranchInfo.toString());
+                    log.log(Level.FINEST,"read branch from log: " + transactionBranchInfo.toString());
                     String name = transactionBranchInfo.getResourceName();
                     Set<XidBranchesPair> transactionsForName = nameToOurTxMap.get(name);
                     if (transactionsForName == null) {
@@ -85,7 +83,7 @@ public class RecoveryImpl implements Recovery {
                     transactionsForName.add(xidBranchesPair);
                 }
             } else {
-                log.trace("read external prepared xid from log: " + toString(xid));
+                log.log(Level.FINEST,"read external prepared xid from log: " + toString(xid));
                 TransactionImpl externalTx = new ExternalTransaction(xid, txManager, xidBranchesPair.getBranches());
                 externalXids.put(xid, externalTx);
                 externalGlobalIdMap.put(xid.getGlobalTransactionId(), externalTx);
@@ -100,10 +98,10 @@ public class RecoveryImpl implements Recovery {
         for (int i = 0; prepared != null && i < prepared.length; i++) {
             Xid xid = prepared[i];
             if (xid.getGlobalTransactionId() == null || xid.getBranchQualifier() == null) {
-                log.warn("Ignoring bad xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
+                log.log(Level.WARNING, "Ignoring bad xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
                 continue;
             }
-            log.trace("Considering recovered xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
+            log.log(Level.FINEST,"Considering recovered xid from\n name: " + xaResource.getName() + "\n " + toString(xid));
             ByteArrayWrapper globalIdWrapper = new ByteArrayWrapper(xid.getGlobalTransactionId());
             XidBranchesPair xidNamesPair = ourXids.get(globalIdWrapper);
             
@@ -113,25 +111,25 @@ public class RecoveryImpl implements Recovery {
                 // Otherwise, wait for recoverResourceManager to be called for the actual XAResource 
                 // This is a bit wasteful, but given our management of XAResources by "name", is about the best we can do.
                 if (isNameInTransaction(xidNamesPair, name, xid)) {
-                    log.trace("This xid was prepared from this XAResource: committing");
+                    log.log(Level.FINEST,"This xid was prepared from this XAResource: committing");
                     commit(xaResource, xid);
                     removeNameFromTransaction(xidNamesPair, name, true);
                 } else {
-                    log.trace("This xid was prepared from another XAResource, ignoring");
+                    log.log(Level.FINEST,"This xid was prepared from another XAResource, ignoring");
                 }
             } else if (txManager.getXidFactory().matchesGlobalId(xid.getGlobalTransactionId())) {
                 //ours, but prepare not logged
-                log.trace("this xid was initiated from this tm but not prepared: rolling back");
+                log.log(Level.FINEST,"this xid was initiated from this tm but not prepared: rolling back");
                 rollback(xaResource, xid);
             } else if (txManager.getXidFactory().matchesBranchId(xid.getBranchQualifier())) {
                 //our branch, but we did not start this tx.
                 TransactionImpl externalTx = externalGlobalIdMap.get(xid.getGlobalTransactionId());
                 if (externalTx == null) {
                     //we did not prepare this branch, rollback.
-                    log.trace("this xid is from an external transaction and was not prepared: rolling back");
+                    log.log(Level.FINEST,"this xid is from an external transaction and was not prepared: rolling back");
                     rollback(xaResource, xid);
                 } else {
-                    log.trace("this xid is from an external transaction and was prepared in this tm.  Waiting for instructions from transaction originator");
+                    log.log(Level.FINEST,"this xid is from an external transaction and was prepared in this tm.  Waiting for instructions from transaction originator");
                     //we prepared this branch, must wait for commit/rollback command.
                     externalTx.addBranchXid(xaResource, xid);
                 }
@@ -174,7 +172,7 @@ public class RecoveryImpl implements Recovery {
                     xaResource.forget(xid);
                 } else {
                     recoveryErrors.add(e);
-                    log.error("Could not roll back", e);
+                    log.log(Level.SEVERE, "Could not roll back", e);
                 }
             } catch (XAException e2) {
                 if (e2.errorCode == XAException.XAER_NOTA) {
@@ -182,7 +180,7 @@ public class RecoveryImpl implements Recovery {
                     // ignore
                 } else {
                     recoveryErrors.add(e);
-                    log.error("Could not roll back", e);
+                    log.log(Level.SEVERE, "Could not roll back", e);
                 }
             }
         }
@@ -213,7 +211,7 @@ public class RecoveryImpl implements Recovery {
             }
         }
         if (warn && removed == 0) {
-            log.error("XAResource named: " + name + " returned branch xid for xid: " + xidBranchesPair.getXid() + " but was not registered with that transaction!");
+            log.log(Level.SEVERE, "XAResource named: " + name + " returned branch xid for xid: " + xidBranchesPair.getXid() + " but was not registered with that transaction!");
         }
         if (xidBranchesPair.getBranches().isEmpty() && 0 != removed ) {
             try {
@@ -221,7 +219,7 @@ public class RecoveryImpl implements Recovery {
                 txManager.getTransactionLog().commit(xidBranchesPair.getXid(), xidBranchesPair.getMark());
             } catch (LogException e) {
                 recoveryErrors.add(e);
-                log.error("Could not commit", e);
+                log.log(Level.SEVERE, "Could not commit", e);
             }
         }
     }

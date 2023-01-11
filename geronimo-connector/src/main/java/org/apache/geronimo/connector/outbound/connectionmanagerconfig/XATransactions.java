@@ -17,7 +17,7 @@
 
 package org.apache.geronimo.connector.outbound.connectionmanagerconfig;
 
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.outbound.ConnectionInterceptor;
 import org.apache.geronimo.connector.outbound.ThreadLocalCachingConnectionInterceptor;

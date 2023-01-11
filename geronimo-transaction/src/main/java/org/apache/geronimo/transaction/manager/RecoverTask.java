@@ -22,7 +22,7 @@ package org.apache.geronimo.transaction.manager;
 
 import java.util.TimerTask;
 
-import javax.transaction.SystemException;
+import jakarta.transaction.SystemException;
 import javax.transaction.xa.XAException;
 
 /**

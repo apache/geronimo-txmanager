@@ -17,7 +17,7 @@
 
 package org.apache.geronimo.connector.outbound.connectiontracking;
 
-import javax.resource.ResourceException;
+import jakarta.resource.ResourceException;
 
 /**
  *

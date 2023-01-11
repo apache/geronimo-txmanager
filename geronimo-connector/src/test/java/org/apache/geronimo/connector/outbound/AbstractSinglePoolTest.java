@@ -23,8 +23,8 @@ package org.apache.geronimo.connector.outbound;
 import java.util.List;
 import java.util.ArrayList;
 
-import javax.resource.ResourceException;
-import javax.resource.spi.ManagedConnectionFactory;
+import jakarta.resource.ResourceException;
+import jakarta.resource.spi.ManagedConnectionFactory;
 
 import junit.framework.TestCase;
 import org.apache.geronimo.connector.mock.MockManagedConnectionFactory;
@@ -32,7 +32,7 @@ import org.apache.geronimo.connector.mock.MockManagedConnectionFactory;
 /**
  * @version $Rev$ $Date$
  */
-public class AbstractSinglePoolTest extends TestCase {
+public abstract class AbstractSinglePoolTest extends TestCase {
 
     private ManagedConnectionFactory mcf = new MockManagedConnectionFactory();
     protected SwitchableInterceptor switchableInterceptor;

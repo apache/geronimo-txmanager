@@ -17,8 +17,8 @@
 
 package org.apache.geronimo.connector.outbound;
 
-import javax.resource.spi.ManagedConnectionFactory;
-import javax.transaction.TransactionManager;
+import jakarta.resource.spi.ManagedConnectionFactory;
+import jakarta.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.LocalTransactions;
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.NoTransactions;
@@ -28,8 +28,9 @@ import org.apache.geronimo.connector.outbound.connectionmanagerconfig.Transactio
 import org.apache.geronimo.connector.outbound.connectionmanagerconfig.XATransactions;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTracker;
 import org.apache.geronimo.transaction.manager.RecoverableTransactionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * GenericConnectionManager sets up a connection manager stack according to the
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @version $Rev$ $Date$
  */
 public class GenericConnectionManager extends AbstractConnectionManager {
-    protected static final Logger log = LoggerFactory.getLogger(GenericConnectionManager.class);
+    protected static final Logger log = Logger.getLogger(GenericConnectionManager.class.getName());
 
     //default constructor to support externalizable subclasses
     public GenericConnectionManager() {
@@ -101,14 +102,14 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             if (mcf == null) {
                 throw new NullPointerException("No ManagedConnectionFactory supplied for " + name);
             }
-            if (mcf instanceof javax.resource.spi.TransactionSupport) {
-                javax.resource.spi.TransactionSupport txSupport = (javax.resource.spi.TransactionSupport)mcf;
-                javax.resource.spi.TransactionSupport.TransactionSupportLevel txSupportLevel = txSupport.getTransactionSupport();
+            if (mcf instanceof jakarta.resource.spi.TransactionSupport) {
+                jakarta.resource.spi.TransactionSupport txSupport = (jakarta.resource.spi.TransactionSupport)mcf;
+                jakarta.resource.spi.TransactionSupport.TransactionSupportLevel txSupportLevel = txSupport.getTransactionSupport();
                 log.info("Runtime TransactionSupport level: " + txSupportLevel);
                 if (txSupportLevel != null) {
-                    if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.NoTransaction) {
+                    if (txSupportLevel == jakarta.resource.spi.TransactionSupport.TransactionSupportLevel.NoTransaction) {
                         transactionSupport = NoTransactions.INSTANCE;
-                    } else if (txSupportLevel == javax.resource.spi.TransactionSupport.TransactionSupportLevel.LocalTransaction) {
+                    } else if (txSupportLevel == jakarta.resource.spi.TransactionSupport.TransactionSupportLevel.LocalTransaction) {
                         if (transactionSupport != NoTransactions.INSTANCE) {
                             transactionSupport = LocalTransactions.INSTANCE;
                         }
@@ -128,8 +129,8 @@ public class GenericConnectionManager extends AbstractConnectionManager {
 
             stack = transactionSupport.addXAResourceInsertionInterceptor(stack, name);
             stack = pooling.addPoolingInterceptors(stack);
-            if (log.isTraceEnabled()) {
-                log.trace("Connection Manager " + name + " installed pool " + stack);
+            if (log.isLoggable(Level.FINEST)) {
+                log.log(Level.FINEST,"Connection Manager " + name + " installed pool " + stack);
             }
 
             this.poolingSupport = pooling;
@@ -155,10 +156,10 @@ public class GenericConnectionManager extends AbstractConnectionManager {
             }
             tail.setStack(stack);
             this.stack = stack;
-            if (log.isDebugEnabled()) {
+            if (log.isLoggable(Level.FINE)) {
                 StringBuilder s = new StringBuilder("ConnectionManager Interceptor stack;\n");
                 stack.info(s);
-                log.debug(s.toString());
+                log.log(Level.FINE, s.toString());
             }
         }
 

@@ -17,7 +17,7 @@
 package org.apache.geronimo.transaction.manager;
 
 import java.util.EventListener;
-import javax.transaction.Transaction;
+import jakarta.transaction.Transaction;
 
 /**
  * @version $Rev$ $Date$

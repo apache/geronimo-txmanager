@@ -21,13 +21,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 
-import javax.resource.spi.work.ExecutionContext;
-import javax.resource.spi.work.Work;
-import javax.resource.spi.work.WorkCompletedException;
-import javax.resource.spi.work.WorkContext;
-import javax.resource.spi.work.WorkException;
-import javax.resource.spi.work.WorkListener;
-import javax.resource.spi.work.WorkManager;
+import jakarta.resource.spi.work.ExecutionContext;
+import jakarta.resource.spi.work.Work;
+import jakarta.resource.spi.work.WorkCompletedException;
+import jakarta.resource.spi.work.WorkContext;
+import jakarta.resource.spi.work.WorkException;
+import jakarta.resource.spi.work.WorkListener;
+import jakarta.resource.spi.work.WorkManager;
 
 import org.apache.geronimo.connector.work.pool.ScheduleWorkExecutor;
 import org.apache.geronimo.connector.work.pool.StartWorkExecutor;
@@ -114,14 +114,14 @@ public class GeronimoWorkManager implements WorkManager {
     }
 
     /* (non-Javadoc)
-    * @see javax.resource.spi.work.WorkManager#doWork(javax.resource.spi.work.Work)
+    * @see jakarta.resource.spi.work.WorkManager#doWork(jakarta.resource.spi.work.Work)
     */
     public void doWork(Work work) throws WorkException {
         executeWork(new WorkerContext(work, workContextHandlers), syncWorkExecutor, syncWorkExecutorPool);
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.WorkManager#doWork(javax.resource.spi.work.Work, long, javax.resource.spi.work.ExecutionContext, javax.resource.spi.work.WorkListener)
+     * @see jakarta.resource.spi.work.WorkManager#doWork(jakarta.resource.spi.work.Work, long, jakarta.resource.spi.work.ExecutionContext, jakarta.resource.spi.work.WorkListener)
      */
     public void doWork(
             Work work,
@@ -136,7 +136,7 @@ public class GeronimoWorkManager implements WorkManager {
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.WorkManager#startWork(javax.resource.spi.work.Work)
+     * @see jakarta.resource.spi.work.WorkManager#startWork(jakarta.resource.spi.work.Work)
      */
     public long startWork(Work work) throws WorkException {
         WorkerContext workWrapper = new WorkerContext(work, workContextHandlers);
@@ -146,7 +146,7 @@ public class GeronimoWorkManager implements WorkManager {
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.WorkManager#startWork(javax.resource.spi.work.Work, long, javax.resource.spi.work.ExecutionContext, javax.resource.spi.work.WorkListener)
+     * @see jakarta.resource.spi.work.WorkManager#startWork(jakarta.resource.spi.work.Work, long, jakarta.resource.spi.work.ExecutionContext, jakarta.resource.spi.work.WorkListener)
      */
     public long startWork(
             Work work,
@@ -162,7 +162,7 @@ public class GeronimoWorkManager implements WorkManager {
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.WorkManager#scheduleWork(javax.resource.spi.work.Work)
+     * @see jakarta.resource.spi.work.WorkManager#scheduleWork(jakarta.resource.spi.work.Work)
      */
     public void scheduleWork(Work work) throws WorkException {
         WorkerContext workWrapper = new WorkerContext(work, workContextHandlers);
@@ -171,7 +171,7 @@ public class GeronimoWorkManager implements WorkManager {
     }
 
     /* (non-Javadoc)
-     * @see javax.resource.spi.work.WorkManager#scheduleWork(javax.resource.spi.work.Work, long, javax.resource.spi.work.ExecutionContext, javax.resource.spi.work.WorkListener)
+     * @see jakarta.resource.spi.work.WorkManager#scheduleWork(jakarta.resource.spi.work.Work, long, jakarta.resource.spi.work.ExecutionContext, jakarta.resource.spi.work.WorkListener)
      */
     public void scheduleWork(
             Work work,

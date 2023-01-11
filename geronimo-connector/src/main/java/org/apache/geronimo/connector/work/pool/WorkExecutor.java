@@ -18,7 +18,7 @@ package org.apache.geronimo.connector.work.pool;
 
 import java.util.concurrent.Executor;
 
-import javax.resource.spi.work.WorkException;
+import jakarta.resource.spi.work.WorkException;
 
 import org.apache.geronimo.connector.work.WorkerContext;
 
@@ -37,7 +37,7 @@ public interface WorkExecutor {
      *
      * @param work Work to be executed.
      *
-     * @throws javax.resource.spi.work.WorkException Indicates that the work has failed.
+     * @throws jakarta.resource.spi.work.WorkException Indicates that the work has failed.
      * @throws InterruptedException Indicates that the thread in charge of the
      * execution of the specified work has been interrupted.
      */

@@ -20,7 +20,7 @@
 
 package org.apache.geronimo.transaction.manager;
 
-import javax.transaction.SystemException;
+import jakarta.transaction.SystemException;
 
 /**
  * @version $Rev$ $Date$
