@@ -31,7 +31,7 @@
 
     <groupId>org.apache.geronimo.components</groupId>
     <artifactId>geronimo-txmanager-parent</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
     <name>Apache Geronimo TxManager</name>
 
@@ -41,7 +41,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf/geronimo-txmanager.git</url>
-        <tag>HEAD</tag>
+        <tag>geronimo-txmanager-parent-4.0.0</tag>
     </scm>
 
     <url>https://geronimo.apache.org/maven/${siteId}/${project.version}</url>
@@ -59,12 +59,12 @@
             <dependency>
                 <groupId>org.apache.geronimo.components</groupId>
                 <artifactId>geronimo-transaction</artifactId>
-                <version>4.0.0-SNAPSHOT</version>
+                <version>4.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.geronimo.components</groupId>
                 <artifactId>geronimo-connector</artifactId>
-                <version>4.0.0-SNAPSHOT</version>
+                <version>4.0.0</version>
             </dependency>
 
             <dependency>
