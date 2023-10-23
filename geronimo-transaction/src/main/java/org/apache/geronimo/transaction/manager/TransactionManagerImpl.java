@@ -60,6 +60,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     private final TransactionLog transactionLog;
     private final XidFactory xidFactory;
     private final int defaultTransactionTimeoutMilliseconds;
+    private final CurrentTimeMsProvider timeProvider;
     private final ThreadLocal<Long> transactionTimeoutMilliseconds = new ThreadLocal<Long>();
     private final ThreadLocal<Transaction> threadTx = new ThreadLocal<Transaction>();
     private final ConcurrentHashMap<Transaction, Thread> associatedTransactions = new ConcurrentHashMap<Transaction, Thread>();
@@ -95,10 +96,16 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     public TransactionManagerImpl(int defaultTransactionTimeoutSeconds, XidFactory xidFactory, TransactionLog transactionLog) throws XAException {
+        this(defaultTransactionTimeoutSeconds, xidFactory, transactionLog, null);
+    }
+
+    public TransactionManagerImpl(int defaultTransactionTimeoutSeconds, XidFactory xidFactory,
+            TransactionLog transactionLog, CurrentTimeMsProvider timeProvider) throws XAException {
         if (defaultTransactionTimeoutSeconds <= 0) {
             throw new IllegalArgumentException("defaultTransactionTimeoutSeconds must be positive: attempted value: " + defaultTransactionTimeoutSeconds);
         }
         this.defaultTransactionTimeoutMilliseconds = defaultTransactionTimeoutSeconds * 1000;
+        this.timeProvider = timeProvider;
 
         if (transactionLog == null) {
             this.transactionLog = new UnrecoverableLog();
@@ -132,7 +139,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             fireThreadAssociated(tx);
             activeCount.getAndIncrement();
         }
-    } 
+    }
 
     private void unassociate() {
         Transaction tx = getTransaction();
@@ -168,7 +175,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (getStatus() != Status.STATUS_NO_TRANSACTION) {
             throw new NotSupportedException("Nested Transactions are not supported");
         }
-        TransactionImpl tx = new TransactionImpl(this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        TransactionImpl tx = new TransactionImpl(this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds), timeProvider);
 //        timeoutTimer.schedule(tx, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
         try {
             associate(tx);
@@ -197,7 +204,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
             if (!(tx instanceof TransactionImpl)) {
                 throw new InvalidTransactionException("Cannot resume foreign transaction: " + tx);
             }
-            
+
             associate((TransactionImpl) tx);
         }
     }
@@ -224,7 +231,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
     }
 
     public Object getTransactionKey() {
-    	TransactionImpl tx = (TransactionImpl) getTransaction();
+        TransactionImpl tx = (TransactionImpl) getTransaction();
         return tx == null ? null: tx.getTransactionKey();
     }
 
@@ -286,7 +293,7 @@ public class TransactionManagerImpl implements TransactionManager, UserTransacti
         if (transactionTimeoutMilliseconds < 0) {
             throw new SystemException("transaction timeout must be positive or 0 to reset to default");
         }
-        return new TransactionImpl(xid, this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds));
+        return new TransactionImpl(xid, this, getTransactionTimeoutMilliseconds(transactionTimeoutMilliseconds), timeProvider);
     }
 
     public void commit(Transaction tx, boolean onePhase) throws XAException {

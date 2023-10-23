@@ -45,19 +45,29 @@ public class TransactionManagerImplTest extends TestCase {
 
     TransactionManagerImpl tm;
 
+    long timeDelta;
+
     protected void setUp() throws Exception {
         tm = createTransactionManager();
+        timeDelta = 0;
     }
 
     private TransactionManagerImpl createTransactionManager() throws XAException {
         return new TransactionManagerImpl(10,
-                new XidFactoryImpl("WHAT DO WE CALL IT?".getBytes()), transactionLog);
+                new XidFactoryImpl("WHAT DO WE CALL IT?".getBytes()), transactionLog, new TestTimeProvider());
     }
 
     protected void tearDown() throws Exception {
         tm = null;
     }
 
+    public class TestTimeProvider implements CurrentTimeMsProvider {
+        @Override
+        public long now() {
+            return System.currentTimeMillis() + timeDelta;
+        }
+
+    }
     public void testNoResourcesCommit() throws Exception {
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
         tm.begin();
@@ -312,8 +322,7 @@ public class TransactionManagerImplTest extends TestCase {
         long timeout = tm.getTransactionTimeoutMilliseconds(0L);
         tm.setTransactionTimeout((int)timeout/4000);
         tm.begin();
-        System.out.println("Test to sleep for " + timeout + " millisecs");
-        Thread.sleep(timeout);
+        timeDelta += timeout;
         try
         {
             tm.commit();
@@ -325,34 +334,33 @@ public class TransactionManagerImplTest extends TestCase {
 
         // Now test if the default timeout is active
         tm.begin();
-        System.out.println("Test to sleep for " + (timeout/2) + " millisecs");
-        Thread.sleep((timeout/2));
+        timeDelta += timeout/2;
         tm.commit();
         // Its a failure if exception occurs.
-    }    
-      
+    }
+
     // resume throws InvalidTransactionException on completed tx (via commit)
     public void testResume1() throws Exception {
         Transaction tx;
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
-        tm.begin();   
+        tm.begin();
         assertEquals(Status.STATUS_ACTIVE, tm.getStatus());
         tx = tm.getTransaction();
         assertNotNull(tx);
         assertEquals(Status.STATUS_ACTIVE, tx.getStatus());
-        
+
         tm.commit();
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
         assertNull(tm.getTransaction());
-        
+
         try {
             tm.resume(tx);
             fail();
         } catch (InvalidTransactionException e) {
             // expected
-        }        
+        }
     }
-    
+
     // resume throws InvalidTransactionException on completed tx (via rollback)
     public void testResume2() throws Exception {
         Transaction tx;
@@ -373,16 +381,16 @@ public class TransactionManagerImplTest extends TestCase {
 
         tm.rollback();
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
-        assertNull(tm.getTransaction());     
-        
+        assertNull(tm.getTransaction());
+
         try {
             tm.resume(tx);
             fail();
         } catch (InvalidTransactionException e) {
             // expected
-        }   
+        }
     }
-    
+
     // resume work on null tx
     public void testResume3() throws Exception {
         Transaction tx;
@@ -400,16 +408,16 @@ public class TransactionManagerImplTest extends TestCase {
         // tx should be null
         tx = tm.suspend();
         assertNull(tx);
-        
+
         try {
             tm.resume(tx);
         } catch (InvalidTransactionException e) {
             // null is considered valid so we don't expect InvalidTransactionException here
             e.printStackTrace();
             fail();
-        }   
+        }
     }
-    
+
     // resume works on any valid tx
     public void testResume4() throws Exception {
         Transaction tx;
@@ -428,10 +436,10 @@ public class TransactionManagerImplTest extends TestCase {
             // tx is considered valid so we don't expect InvalidTransactionException here
             e.printStackTrace();
             fail();
-        }   
+        }
 
         tm.commit();
         assertEquals(Status.STATUS_NO_TRANSACTION, tm.getStatus());
-        assertNull(tm.getTransaction()); 
+        assertNull(tm.getTransaction());
     }
 }
